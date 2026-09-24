@@ -7,6 +7,8 @@ from PySide6.QtWidgets import QLabel, QMainWindow, QVBoxLayout, QWidget
 from app.utils.logger import get_logger
 from app.views.ui_main_window import Ui_MainWindow
 
+from app.controllers.cad_produtos_controller import CadProdutosController
+
 logger = get_logger("main_window")
 
 
@@ -32,6 +34,8 @@ class MainWindowController(QMainWindow):
         self._iniciar_relogio()
 
         logger.info("Janela principal iniciada")
+
+        self._criadores["produtos"] = lambda pai: CadProdutosController(pai)
 
     # ---------------- configuração ----------------
 
