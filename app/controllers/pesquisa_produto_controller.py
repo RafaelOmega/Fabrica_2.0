@@ -11,6 +11,8 @@ from PySide6.QtWidgets import QDialog
 from app.utils.logger import get_logger
 from app.views.ui_pesquisa_produto import Ui_Pesquisa_Prod
 
+from app.models.produto import Produto
+
 try:
     from app.services.produto_service import ProdutoService
 except ImportError:
@@ -49,45 +51,43 @@ class PesquisaProdutoController(QDialog):
 
     def _pesquisar(self):
         filtro = self.ui.txt_Pesquisa.text().strip()
-
         registros = self._service.pesquisar(filtro) if self._service else []
         self._modelo.removeRows(0, self._modelo.rowCount())
 
-        for reg in registros:
+        for produto in registros:
             linha = [
-                str(reg.get("codigo", "")),
-                str(reg.get("descricao", "")),
-                "Sim" if reg.get("materia_prima") else "",
-                "Sim" if reg.get("produto_acabado") else "",
-                "Sim" if reg.get("mao_obra") else "",
-                str(reg.get("peso", "")),
-                str(reg.get("custo", "")),
-                "Sim" if reg.get("controla_estoque") else "",
+                produto.codigo,
+                produto.descricao,
+                "Sim" if produto.materia_prima else "",
+                "Sim" if produto.produto_acabado else "",
+                "Sim" if produto.mao_obra else "",
+                str(produto.peso),
+                str(produto.custo),
+                "Sim" if produto.controla_estoque else "",
             ]
-            itens = [QStandardItem(valor) for valor in linha]
-            self._modelo.appendRow(itens)
+            self._modelo.appendRow([QStandardItem(v) for v in linha])
 
         self.ui.tb_Produtos.resizeColumnsToContents()
 
     # ---------------- selecao ----------------
 
-    def produto_selecionado(self) -> dict | None:
+    def produto_selecionado(self) -> Produto | None:
         indice = self.ui.tb_Produtos.currentIndex()
         if not indice.isValid():
             return None
-
         linha = indice.row()
 
-        def col(c): return self._modelo.item(
-            linha, c).text() if self._modelo.item(linha, c) else ""
+        def col(c):
+            item = self._modelo.item(linha, c)
+            return item.text() if item else ""
 
-        return {
-            "codigo": col(0),
-            "descricao": col(1),
-            "materia_prima": col(2) == "Sim",
-            "produto_acabado": col(3) == "Sim",
-            "mao_obra": col(4) == "Sim",
-            "peso": col(5),
-            "custo": col(6),
-            "controla_estoque": col(7) == "Sim",
-        }
+        return Produto(
+            codigo=col(0),
+            descricao=col(1),
+            materia_prima=col(2) == "Sim",
+            produto_acabado=col(3) == "Sim",
+            mao_obra=col(4) == "Sim",
+            peso=float(col(5) or 0),
+            custo=float(col(6) or 0),
+            controla_estoque=col(7) == "Sim",
+        )

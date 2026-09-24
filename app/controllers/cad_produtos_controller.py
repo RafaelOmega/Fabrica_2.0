@@ -103,16 +103,13 @@ class CadProdutosController(QWidget):
             "controla_estoque": self.ui.ch_Controla_Estoque.isChecked(),
         }
 
-    def _preencher(self, produto: dict):
+    def _preencher(self, produto):
         self._limpar_campos()
-        self.ui.txt_Codigo.setText(str(produto.get("codigo", "")))
-        self.ui.txt_Descricao.setText(str(produto.get("descricao", "")))
-        self.ui.txt_Peso.setValue(float(produto.get("peso", 0.0)))
-        self.ui.txt_Custo.setValue(float(produto.get("custo", 0.0)))
-        self.ui.ch_Mat_Prima.setChecked(
-            bool(produto.get("materia_prima", False)))
-        self.ui.ch_Prod_Acabado.setChecked(
-            bool(produto.get("produto_acabado", False)))
-        self.ui.ch_Mao_Obra.setChecked(bool(produto.get("mao_obra", False)))
-        self.ui.ch_Controla_Estoque.setChecked(
-            bool(produto.get("controla_estoque", False)))
+        self.ui.txt_Codigo.setText(produto.codigo)
+        self.ui.txt_Descricao.setText(produto.descricao)
+        self.ui.txt_Peso.setValue(produto.peso)
+        self.ui.txt_Custo.setValue(produto.custo)
+        self.ui.ch_Mat_Prima.setChecked(produto.materia_prima)
+        self.ui.ch_Prod_Acabado.setChecked(produto.produto_acabado)
+        self.ui.ch_Mao_Obra.setChecked(produto.mao_obra)
+        self.ui.ch_Controla_Estoque.setChecked(produto.controla_estoque)
