@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'pesquisa_produtorfQlMb.ui'
+## Form generated from reading UI file 'pesquisa_produtoYcrBZZ.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -23,7 +23,7 @@ class Ui_Pesquisa_Prod(object):
     def setupUi(self, Pesquisa_Prod):
         if not Pesquisa_Prod.objectName():
             Pesquisa_Prod.setObjectName(u"Pesquisa_Prod")
-        Pesquisa_Prod.resize(930, 450)
+        Pesquisa_Prod.resize(1100, 450)
         font = QFont()
         font.setFamilies([u"Segoe UI Semibold"])
         font.setPointSize(10)

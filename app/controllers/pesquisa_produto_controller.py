@@ -4,12 +4,13 @@
 Responsabilidade: APENAS controle de tela (filtro, tabela, selecao).
 A consulta e delegada ao ProdutoService.
 """
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import QDialog, QMessageBox
 
 from app.models.produto import Produto
 from app.utils.logger import get_logger
+from app.utils.table_utils import ajustar_larguras, configurar_tabela
 from app.views.ui_pesquisa_produto import Ui_Pesquisa_Prod
 
 try:
@@ -21,6 +22,12 @@ logger = get_logger("pesquisa_produto")
 
 COLUNAS = ["Código", "Descrição", "Matéria Prima", "Prod. Acabado",
            "Mão de Obra", "Peso (Kg)", "Custo (R$)", "Ctrl. Estoque"]
+
+# Índice da coluna que recebe a folga horizontal (Descrição)
+COLUNA_STRETCH = 1
+
+# Intervalo (ms) para filtrar enquanto digita
+DEBOUNCE_MS = 300
 
 
 class PesquisaProdutoController(QDialog):
@@ -40,6 +47,19 @@ class PesquisaProdutoController(QDialog):
         self._modelo.setHorizontalHeaderLabels(COLUNAS)
         self.ui.tb_Produtos.setModel(self._modelo)
 
+        # Tabela responsiva: ajusta colunas ao conteúdo e à largura
+        configurar_tabela(
+            self.ui.tb_Produtos,
+            coluna_stretch=COLUNA_STRETCH,
+            ordenavel=True,
+        )
+
+        # Filtro ao digitar (com debounce para não consultar a cada tecla)
+        self._timer_filtro = QTimer(self)
+        self._timer_filtro.setSingleShot(True)
+        self._timer_filtro.timeout.connect(self._pesquisar)
+
+        self.ui.txt_Pesquisa.textChanged.connect(self._agendar_filtro)
         self.ui.bt_Pesquisa.clicked.connect(self._pesquisar)
         self.ui.txt_Pesquisa.returnPressed.connect(self._pesquisar)
         self.ui.tb_Produtos.doubleClicked.connect(self.accept)
@@ -54,7 +74,12 @@ class PesquisaProdutoController(QDialog):
 
     # ---------------- acoes ----------------
 
+    def _agendar_filtro(self):
+        """Agenda a consulta após pausa na digitação."""
+        self._timer_filtro.start(DEBOUNCE_MS)
+
     def _pesquisar(self):
+        self._timer_filtro.stop()  # cancela agendamento pendente
         try:
             filtro = self.ui.txt_Pesquisa.text().strip()
             registros = self._service.pesquisar(
@@ -79,7 +104,8 @@ class PesquisaProdutoController(QDialog):
             ]
             self._modelo.appendRow([QStandardItem(v) for v in linha])
 
-        self.ui.tb_Produtos.resizeColumnsToContents()
+        # Recalcula larguras após os dados mudarem
+        ajustar_larguras(self.ui.tb_Produtos, coluna_stretch=COLUNA_STRETCH)
 
     # ---------------- selecao ----------------
 

@@ -48,7 +48,7 @@ def main() -> int:
             return 0
 
     janela = MainWindowController()
-    janela.show()
+    janela.showMaximized()
 
     logger.info("Aplicação iniciada")
     return app.exec()
