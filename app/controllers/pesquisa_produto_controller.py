@@ -70,8 +70,8 @@ class PesquisaProdutoController(QDialog):
             linha = [
                 produto.codigo,
                 produto.descricao,
-                "Sim" if produto.materia_prima else "",
-                "Sim" if produto.produto_acabado else "",
+                "Sim" if produto.mat_prima else "",
+                "Sim" if produto.prod_acabado else "",
                 "Sim" if produto.mao_obra else "",
                 str(produto.peso),
                 str(produto.custo),
@@ -96,8 +96,8 @@ class PesquisaProdutoController(QDialog):
         return Produto(
             codigo=col(0),
             descricao=col(1),
-            materia_prima=col(2) == "Sim",
-            produto_acabado=col(3) == "Sim",
+            mat_prima=col(2) == "Sim",
+            prod_acabado=col(3) == "Sim",
             mao_obra=col(4) == "Sim",
             peso=float(col(5) or 0),
             custo=float(col(6) or 0),

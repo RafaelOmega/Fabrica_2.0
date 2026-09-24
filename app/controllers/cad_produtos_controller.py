@@ -103,8 +103,8 @@ class CadProdutosController(QWidget):
             "descricao": self.ui.txt_Descricao.text().strip(),
             "peso": self.ui.txt_Peso.value(),
             "custo": self.ui.txt_Custo.value(),
-            "materia_prima": self.ui.ch_Mat_Prima.isChecked(),
-            "produto_acabado": self.ui.ch_Prod_Acabado.isChecked(),
+            "mat_prima": self.ui.ch_Mat_Prima.isChecked(),
+            "prod_acabado": self.ui.ch_Prod_Acabado.isChecked(),
             "mao_obra": self.ui.ch_Mao_Obra.isChecked(),
             "controla_estoque": self.ui.ch_Controla_Estoque.isChecked(),
         }
@@ -115,7 +115,7 @@ class CadProdutosController(QWidget):
         self.ui.txt_Descricao.setText(produto.descricao)
         self.ui.txt_Peso.setValue(produto.peso)
         self.ui.txt_Custo.setValue(produto.custo)
-        self.ui.ch_Mat_Prima.setChecked(produto.materia_prima)
-        self.ui.ch_Prod_Acabado.setChecked(produto.produto_acabado)
+        self.ui.ch_Mat_Prima.setChecked(produto.mat_prima)
+        self.ui.ch_Prod_Acabado.setChecked(produto.prod_acabado)
         self.ui.ch_Mao_Obra.setChecked(produto.mao_obra)
         self.ui.ch_Controla_Estoque.setChecked(produto.controla_estoque)
