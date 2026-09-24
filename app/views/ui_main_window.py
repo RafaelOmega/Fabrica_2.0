@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_windowKvcJPQ.ui'
+## Form generated from reading UI file 'main_windownefTIY.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -25,7 +25,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(800, 600)
+        MainWindow.resize(1000, 600)
         font = QFont()
         font.setFamilies([u"Segoe UI Semibold"])
         font.setPointSize(10)
@@ -103,7 +103,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 800, 33))
+        self.menubar.setGeometry(QRect(0, 0, 1000, 33))
         self.menuCadastros = QMenu(self.menubar)
         self.menuCadastros.setObjectName(u"menuCadastros")
         self.menuLan_amentos = QMenu(self.menubar)
