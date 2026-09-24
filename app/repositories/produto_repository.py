@@ -6,9 +6,10 @@ from app.utils.logger import get_logger
 
 logger = get_logger("produto_repository")
 
+# Colunas para INSERT/UPDATE (id é auto-gerado pelo banco)
 _COLUNAS = (
     "codigo, descricao, peso, custo, "
-    "materia_prima, produto_acabado, mao_obra, controla_estoque"
+    "mat_prima, prod_acabado, mao_obra, controla_estoque"
 )
 
 
@@ -22,13 +23,15 @@ class ProdutoRepository:
             with self._conn.cursor() as cur:
                 cur.execute(
                     f"INSERT INTO produtos ({_COLUNAS}) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
+                    "RETURNING id",
                     (produto.codigo, produto.descricao, produto.peso,
-                     produto.custo, produto.materia_prima,
-                     produto.produto_acabado, produto.mao_obra,
+                     produto.custo, produto.mat_prima,
+                     produto.prod_acabado, produto.mao_obra,
                      produto.controla_estoque),
                 )
-        logger.info("Produto inserido: %s", produto.codigo)
+                produto.id = cur.fetchone()[0]
+        logger.info("Produto inserido: %s (id=%s)", produto.codigo, produto.id)
         return produto
 
     def atualizar(self, produto: Produto) -> bool:
@@ -38,12 +41,12 @@ class ProdutoRepository:
                     """
                     UPDATE produtos
                        SET descricao = %s, peso = %s, custo = %s,
-                           materia_prima = %s, produto_acabado = %s,
+                           mat_prima = %s, prod_acabado = %s,
                            mao_obra = %s, controla_estoque = %s
                      WHERE codigo = %s
                     """,
                     (produto.descricao, produto.peso, produto.custo,
-                     produto.materia_prima, produto.produto_acabado,
+                     produto.mat_prima, produto.prod_acabado,
                      produto.mao_obra, produto.controla_estoque,
                      produto.codigo),
                 )
@@ -62,7 +65,7 @@ class ProdutoRepository:
         with self._conn:
             with self._conn.cursor() as cur:
                 cur.execute(
-                    f"SELECT {_COLUNAS} FROM produtos WHERE codigo = %s",
+                    f"SELECT id, {_COLUNAS} FROM produtos WHERE codigo = %s",
                     (codigo,),
                 )
                 linha = cur.fetchone()
@@ -74,7 +77,7 @@ class ProdutoRepository:
             with self._conn.cursor() as cur:
                 cur.execute(
                     f"""
-                    SELECT {_COLUNAS} FROM produtos
+                    SELECT id, {_COLUNAS} FROM produtos
                      WHERE codigo ILIKE %s OR descricao ILIKE %s
                      ORDER BY codigo
                     """,
@@ -88,8 +91,9 @@ class ProdutoRepository:
         if not linha:
             return None
         return Produto(
-            codigo=linha[0], descricao=linha[1], peso=linha[2],
-            custo=linha[3], materia_prima=linha[4],
-            produto_acabado=linha[5], mao_obra=linha[6],
-            controla_estoque=linha[7],
+            id=linha[0],
+            codigo=linha[1], descricao=linha[2], peso=linha[3],
+            custo=linha[4], mat_prima=linha[5],
+            prod_acabado=linha[6], mao_obra=linha[7],
+            controla_estoque=linha[8],
         )

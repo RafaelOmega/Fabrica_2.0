@@ -6,12 +6,11 @@ A consulta e delegada ao ProdutoService.
 """
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QStandardItem, QStandardItemModel
-from PySide6.QtWidgets import QDialog
-
-from app.utils.logger import get_logger
-from app.views.ui_pesquisa_produto import Ui_Pesquisa_Prod
+from PySide6.QtWidgets import QDialog, QMessageBox
 
 from app.models.produto import Produto
+from app.utils.logger import get_logger
+from app.views.ui_pesquisa_produto import Ui_Pesquisa_Prod
 
 try:
     from app.services.produto_service import ProdutoService
@@ -45,13 +44,26 @@ class PesquisaProdutoController(QDialog):
         self.ui.txt_Pesquisa.returnPressed.connect(self._pesquisar)
         self.ui.tb_Produtos.doubleClicked.connect(self.accept)
 
-        self._pesquisar()  # carrega a lista ao abrir
+        try:
+            self._pesquisar()  # carrega a lista ao abrir
+        except Exception as exc:
+            logger.exception("Falha ao carregar produtos na abertura")
+            QMessageBox.critical(
+                self, "Erro",
+                f"Não foi possível carregar produtos:\n{exc}")
 
     # ---------------- acoes ----------------
 
     def _pesquisar(self):
-        filtro = self.ui.txt_Pesquisa.text().strip()
-        registros = self._service.pesquisar(filtro) if self._service else []
+        try:
+            filtro = self.ui.txt_Pesquisa.text().strip()
+            registros = self._service.pesquisar(
+                filtro) if self._service else []
+        except Exception as exc:
+            logger.exception("Falha na consulta")
+            QMessageBox.critical(self, "Erro", f"Falha na consulta:\n{exc}")
+            return
+
         self._modelo.removeRows(0, self._modelo.rowCount())
 
         for produto in registros:

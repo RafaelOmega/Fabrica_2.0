@@ -4,10 +4,9 @@ from datetime import datetime
 from PySide6.QtCore import QDate, QTime, Qt, QTimer
 from PySide6.QtWidgets import QLabel, QMainWindow, QVBoxLayout, QWidget
 
+from app.controllers.cad_produtos_controller import CadProdutosController
 from app.utils.logger import get_logger
 from app.views.ui_main_window import Ui_MainWindow
-
-from app.controllers.cad_produtos_controller import CadProdutosController
 
 logger = get_logger("main_window")
 
@@ -33,9 +32,9 @@ class MainWindowController(QMainWindow):
         self._conectar_acoes()
         self._iniciar_relogio()
 
-        logger.info("Janela principal iniciada")
-
         self._criadores["produtos"] = lambda pai: CadProdutosController(pai)
+
+        logger.info("Janela principal iniciada")
 
     # ---------------- configuração ----------------
 
@@ -61,8 +60,7 @@ class MainWindowController(QMainWindow):
         }
         for chave, (acao, _titulo) in self._telas.items():
             acao.triggered.connect(
-                lambda _checked=False, c=chave: self._abrir_tela(c)
-            )
+                lambda _checked=False, c=chave: self._abrir_tela(c))
 
     def _iniciar_relogio(self):
         self._timer = QTimer(self)
@@ -97,13 +95,10 @@ class MainWindowController(QMainWindow):
             return criador(self)
 
         # Placeholder até a tela ter seu próprio controller.
-        # Exemplo de registro quando existir o controller real:
-        #   self._criadores["produtos"] = lambda pai: ProdutosController(pai)
         widget = QWidget()
         layout = QVBoxLayout(widget)
         rotulo = QLabel(
-            f"{titulo}\n(controller ainda não implementado)", widget
-        )
+            f"{titulo}\n(controller ainda não implementado)", widget)
         rotulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(rotulo)
         return widget

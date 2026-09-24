@@ -4,7 +4,7 @@
 Responsabilidade: APENAS controle de tela (botões, campos, navegação).
 Operações de dados são delegadas ao ProdutoService.
 """
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QMessageBox, QWidget
 
 from app.utils.logger import get_logger
 from app.views.ui_cad_produtos import Ui_Cad_Produtos
@@ -51,8 +51,14 @@ class CadProdutosController(QWidget):
 
     def _pesquisar(self):
         from app.controllers.pesquisa_produto_controller import PesquisaProdutoController
-
-        dialogo = PesquisaProdutoController(self)
+        try:
+            dialogo = PesquisaProdutoController(self)
+        except Exception as exc:
+            logger.exception("Erro ao abrir pesquisa")
+            QMessageBox.critical(
+                self, "Erro",
+                f"Não foi possível abrir a pesquisa:\n{exc}")
+            return
         if dialogo.exec() == dialogo.DialogCode.Accepted:
             produto = dialogo.produto_selecionado()
             if produto:
