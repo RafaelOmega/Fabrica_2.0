@@ -124,16 +124,18 @@ class FichaTecnicaRepository:
         return [
             ItemFichaTecnica(
                 id=l[0], ficha_id=l[1], produto_id=l[2],
-                codigo_produto=l[3], quantidade_kg=l[4],
+                codigo_produto=l[3], quantidade_kg=float(l[4]),
             )
             for l in cur.fetchall()
         ]
 
     @staticmethod
     def _linha_para_ficha(linha) -> FichaTecnica:
+        if not linha:
+            return None
         return FichaTecnica(
             id=linha[0],
             produto_id=linha[1],
             codigo_produto=linha[2],
-            sacos_batida=linha[3],
+            sacos_batida=float(linha[3]),
         )

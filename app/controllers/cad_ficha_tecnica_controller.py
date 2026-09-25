@@ -3,6 +3,10 @@
 
 Responsabilidade: APENAS controle de tela (botões, campos, navegação).
 Operações de dados são delegadas ao FichaTecnicaService e ProdutoService.
+
+Fluxo:
+  Inicial -> Novo (cabeçalho) -> [bt_Abrir_Ficha] -> Itens
+          -> [bt_Sair_Ficha] -> Finalizado -> Salvar
 """
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QStandardItem, QStandardItemModel, QShortcut
@@ -25,13 +29,19 @@ except ImportError:
 
 logger = get_logger("cad_ficha_tecnica")
 
-ESTADO_INICIAL = "inicial"
-ESTADO_NOVO = "novo"
-ESTADO_VISUALIZACAO = "visualizacao"
-ESTADO_EDICAO = "edicao"
+# modos
+MODO_INICIAL = "inicial"
+MODO_NOVO = "novo"
+MODO_VISUALIZACAO = "visualizacao"
+MODO_EDICAO = "edicao"
 
-COLUNAS_BATIDA = ["Código", "Matéria Prima", "Qtde Kg"]
-COLUNAS_SACO = ["Código", "Matéria Prima", "Kg/Saco"]
+# fases dentro de novo/edição
+FASE_CABECALHO = "cabecalho"
+FASE_ITENS = "itens"
+FASE_FINALIZADO = "finalizado"
+
+COLUNAS_BATIDA = ["Código", "Insumo", "Qtde Kg"]
+COLUNAS_SACO = ["Código", "Insumo", "Kg/Saco"]
 
 
 class CadFichaTecnicaController(QWidget):
@@ -49,9 +59,12 @@ class CadFichaTecnicaController(QWidget):
         if self._service_produto is None:
             logger.warning("ProdutoService nao encontrado")
 
-        self._modo = ESTADO_INICIAL
+        self._modo = MODO_INICIAL
+        self._fase = FASE_CABECALHO
         self._itens: list[ItemFichaTecnica] = []
-        self._produto_selecionado = None  # mat-prima aguardando qtde
+        self._produto_selecionado = None
+        self._produto_acabado = None
+        self._ficha_id = None
 
         self._montar_tabelas()
         self._conectar_botoes()
@@ -77,7 +90,7 @@ class CadFichaTecnicaController(QWidget):
     def _conectar_botoes(self):
         self.ui.bt_Novo.clicked.connect(self._novo)
         self.ui.bt_Pesquisa_Ficha_Tecnica.clicked.connect(self._pesquisar)
-        self.ui.bt_Abrir_Ficha.clicked.connect(self._ao_enter_ficha)
+        self.ui.bt_Abrir_Ficha.clicked.connect(self._abrir_ficha)
         self.ui.bt_Pesquisa_Prod_Acabado.clicked.connect(
             self._pesquisar_prod_acabado)
         self.ui.bt_Pesquisa_Mat_Prima.clicked.connect(
@@ -85,7 +98,7 @@ class CadFichaTecnicaController(QWidget):
         self.ui.bt_Salvar_Itens.clicked.connect(self._adicionar_item)
         self.ui.bt_Limpar_Itens.clicked.connect(self._limpar_itens)
         self.ui.bt_Excluir_Itens.clicked.connect(self._excluir_item)
-        self.ui.bt_Sair_Ficha.clicked.connect(self._limpar_campos)
+        self.ui.bt_Sair_Ficha.clicked.connect(self._sair_ficha)
         self.ui.bt_Salvar.clicked.connect(self._salvar)
         self.ui.bt_Editar.clicked.connect(self._liberar_edicao)
         self.ui.bt_Limpar.clicked.connect(self._limpar_campos)
@@ -100,60 +113,82 @@ class CadFichaTecnicaController(QWidget):
 
     # ---------------- estados da tela ----------------
 
-    def _estado_inicial(self):
-        self.ui.txt_Ficha.setEnabled(True)
-        self.ui.bt_Pesquisa_Ficha_Tecnica.setEnabled(True)
-        self.ui.bt_Novo.setEnabled(True)
+    def _aplicar_estado(self):
+        """Aplica habilitação dos widgets conforme modo + fase."""
+        m, f = self._modo, self._fase
 
+        # ---- estado inicial ----
+        if m == MODO_INICIAL:
+            self.ui.txt_Ficha.setEnabled(True)
+            self.ui.bt_Pesquisa_Ficha_Tecnica.setEnabled(True)
+            self.ui.bt_Novo.setEnabled(True)
+            self._set_formulario(False)
+            self.ui.bt_Abrir_Ficha.setEnabled(False)
+            self.ui.bt_Sair_Ficha.setEnabled(False)
+            self._set_crud_ficha(salvar=False, editar=False,
+                                 excluir=False, limpar=False)
+            return
+
+        # ---- visualização ----
+        if m == MODO_VISUALIZACAO:
+            self.ui.txt_Ficha.setEnabled(False)
+            self.ui.bt_Pesquisa_Ficha_Tecnica.setEnabled(False)
+            self.ui.bt_Novo.setEnabled(False)
+            self._set_formulario(False)
+            self.ui.bt_Abrir_Ficha.setEnabled(False)
+            self.ui.bt_Sair_Ficha.setEnabled(False)
+            self._set_crud_ficha(salvar=False, editar=True,
+                                 excluir=True, limpar=True)
+            return
+
+        # ---- novo / edição ----
+        self.ui.txt_Ficha.setEnabled(False)
+        self.ui.bt_Pesquisa_Ficha_Tecnica.setEnabled(False)
+        self.ui.bt_Novo.setEnabled(False)
+
+        cabecalho_ativo = (f == FASE_CABECALHO)
+        itens_ativo = (f == FASE_ITENS)
+
+        # cabeçalho
+        self.ui.txt_Sacos_Batida.setEnabled(cabecalho_ativo)
+        self.ui.txt_Prod_Acabado.setEnabled(cabecalho_ativo)
+        self.ui.bt_Pesquisa_Prod_Acabado.setEnabled(cabecalho_ativo)
+
+        # bt_Abrir_Ficha: ativo no cabeçalho e no finalizado (reabrir)
+        self.ui.bt_Abrir_Ficha.setEnabled(
+            cabecalho_ativo or f == FASE_FINALIZADO)
+
+        # itens
+        self.ui.txt_Cod_Mat_Prima.setEnabled(itens_ativo)
+        self.ui.bt_Pesquisa_Mat_Prima.setEnabled(itens_ativo)
+        self.ui.txt_Qtde.setEnabled(itens_ativo)
+        self.ui.bt_Salvar_Itens.setEnabled(itens_ativo)
+        self.ui.bt_Limpar_Itens.setEnabled(itens_ativo)
+        self.ui.bt_Excluir_Itens.setEnabled(itens_ativo)
+        self.ui.bt_Sair_Ficha.setEnabled(itens_ativo)
+
+        # salvar só no finalizado
+        self._set_crud_ficha(
+            salvar=(f == FASE_FINALIZADO),
+            editar=False,
+            excluir=(m == MODO_EDICAO),
+            limpar=True,
+        )
+
+    def _set_formulario(self, ativo: bool):
         for w in (self.ui.txt_Sacos_Batida, self.ui.txt_Prod_Acabado,
                   self.ui.bt_Pesquisa_Prod_Acabado,
                   self.ui.txt_Cod_Mat_Prima, self.ui.bt_Pesquisa_Mat_Prima,
                   self.ui.txt_Qtde, self.ui.bt_Salvar_Itens,
-                  self.ui.bt_Limpar_Itens, self.ui.bt_Excluir_Itens,
-                  self.ui.bt_Salvar, self.ui.bt_Editar,
-                  self.ui.bt_Excluir, self.ui.bt_Limpar,
-                  self.ui.bt_Abrir_Ficha):
-            w.setEnabled(False)
+                  self.ui.bt_Limpar_Itens, self.ui.bt_Excluir_Itens):
+            w.setEnabled(ativo)
 
-    def _estado_novo(self):
-        self.ui.txt_Ficha.setEnabled(False)  # id é gerado pelo banco
-        for w in (self.ui.txt_Sacos_Batida, self.ui.txt_Prod_Acabado,
-                  self.ui.bt_Pesquisa_Prod_Acabado,
-                  self.ui.txt_Cod_Mat_Prima, self.ui.bt_Pesquisa_Mat_Prima,
-                  self.ui.txt_Qtde, self.ui.bt_Salvar_Itens,
-                  self.ui.bt_Limpar_Itens, self.ui.bt_Excluir_Itens,
-                  self.ui.bt_Salvar, self.ui.bt_Limpar,
-                  self.ui.bt_Abrir_Ficha):
-            w.setEnabled(True)
-        for w in (self.ui.bt_Editar, self.ui.bt_Excluir,
-                  self.ui.bt_Novo, self.ui.bt_Pesquisa_Ficha_Tecnica):
-            w.setEnabled(False)
-
-    def _estado_visualizacao(self):
-        for w in (self.ui.txt_Sacos_Batida, self.ui.txt_Prod_Acabado,
-                  self.ui.bt_Pesquisa_Prod_Acabado,
-                  self.ui.txt_Cod_Mat_Prima, self.ui.bt_Pesquisa_Mat_Prima,
-                  self.ui.txt_Qtde, self.ui.bt_Salvar_Itens,
-                  self.ui.bt_Limpar_Itens, self.ui.bt_Excluir_Itens,
-                  self.ui.bt_Salvar, self.ui.bt_Novo,
-                  self.ui.bt_Pesquisa_Ficha_Tecnica, self.ui.bt_Abrir_Ficha):
-            w.setEnabled(False)
-        for w in (self.ui.bt_Editar, self.ui.bt_Limpar, self.ui.bt_Excluir):
-            w.setEnabled(True)
-
-    def _estado_edicao(self):
-        for w in (self.ui.txt_Sacos_Batida, self.ui.txt_Prod_Acabado,
-                  self.ui.bt_Pesquisa_Prod_Acabado,
-                  self.ui.txt_Cod_Mat_Prima, self.ui.bt_Pesquisa_Mat_Prima,
-                  self.ui.txt_Qtde, self.ui.bt_Salvar_Itens,
-                  self.ui.bt_Limpar_Itens, self.ui.bt_Excluir_Itens,
-                  self.ui.bt_Salvar, self.ui.bt_Limpar,
-                  self.ui.bt_Abrir_Ficha):
-            w.setEnabled(True)
-        for w in (self.ui.bt_Editar, self.ui.bt_Novo,
-                  self.ui.bt_Pesquisa_Ficha_Tecnica):
-            w.setEnabled(False)
-        self.ui.bt_Excluir.setEnabled(True)
+    def _set_crud_ficha(self, salvar: bool, editar: bool,
+                        excluir: bool, limpar: bool):
+        self.ui.bt_Salvar.setEnabled(salvar)
+        self.ui.bt_Editar.setEnabled(editar)
+        self.ui.bt_Excluir.setEnabled(excluir)
+        self.ui.bt_Limpar.setEnabled(limpar)
 
     # ---------------- mensagens ----------------
 
@@ -168,19 +203,58 @@ class CadFichaTecnicaController(QWidget):
     # ---------------- fluxo da ficha ----------------
 
     def _novo(self):
-        if self._modo != ESTADO_INICIAL:
+        if self._modo != MODO_INICIAL:
             return
         self._limpar_campos()
-        self._modo = ESTADO_NOVO
-        self._estado_novo()
+        self._modo = MODO_NOVO
+        self._fase = FASE_CABECALHO
+        self._aplicar_estado()
         self.ui.txt_Sacos_Batida.setFocus()
 
     def _liberar_edicao(self):
-        if self._modo != ESTADO_VISUALIZACAO:
+        if self._modo != MODO_VISUALIZACAO:
             return
-        self._modo = ESTADO_EDICAO
-        self._estado_edicao()
+        self._modo = MODO_EDICAO
+        self._fase = FASE_CABECALHO
+        self._aplicar_estado()
         self.ui.txt_Sacos_Batida.setFocus()
+
+    def _abrir_ficha(self):
+        """bt_Abrir_Ficha: valida o cabeçalho e libera a inclusão de itens."""
+        if self._fase not in (FASE_CABECALHO, FASE_FINALIZADO):
+            return
+        if self._modo not in (MODO_NOVO, MODO_EDICAO):
+            return
+
+        if not self.ui.txt_Prod_Acabado.text().strip():
+            QMessageBox.warning(
+                self, "Atenção", "Informe o produto acabado da ficha.")
+            self.ui.txt_Prod_Acabado.setFocus()
+            return
+
+        try:
+            sacos = float(
+                self.ui.txt_Sacos_Batida.text().strip().replace(",", "."))
+        except ValueError:
+            sacos = 0.0
+        if sacos <= 0:
+            QMessageBox.warning(
+                self, "Atenção",
+                "Informe a quantidade de sacos por batida (maior que zero).")
+            self.ui.txt_Sacos_Batida.setFocus()
+            return
+
+        self._fase = FASE_ITENS
+        self._aplicar_estado()
+        self.ui.txt_Cod_Mat_Prima.setFocus()
+
+    def _sair_ficha(self):
+        """bt_Sair_Ficha: finaliza a inclusão de itens e libera o Salvar."""
+        if self._fase != FASE_ITENS:
+            return
+        self._fase = FASE_FINALIZADO
+        self._aplicar_estado()
+        self.ui.bt_Salvar.setFocus()
 
     def _ao_enter_ficha(self):
         texto = self.ui.txt_Ficha.text().strip()
@@ -238,7 +312,7 @@ class CadFichaTecnicaController(QWidget):
             if ficha:
                 self._preencher(ficha)
 
-    # ---------------- produto acabado / matéria prima ----------------
+    # ---------------- produto acabado / insumo ----------------
 
     def _pesquisar_prod_acabado(self):
         from app.controllers.pesquisa_produto_controller import (
@@ -256,10 +330,9 @@ class CadFichaTecnicaController(QWidget):
                 self, "Atenção",
                 f"'{produto.codigo}' não é um produto acabado.")
             return
+        self._produto_acabado = produto
         self.ui.txt_Prod_Acabado.setText(produto.codigo)
         self.ui.txt_Descricao_Prod_Acabado.setText(produto.descricao)
-        self._produto_acabado = produto
-        self.ui.txt_Cod_Mat_Prima.setFocus()
 
     def _pesquisar_mat_prima(self):
         from app.controllers.pesquisa_produto_controller import (
@@ -269,9 +342,11 @@ class CadFichaTecnicaController(QWidget):
         if dialogo.exec() == dialogo.DialogCode.Accepted:
             produto = dialogo.produto_selecionado()
             if produto:
-                self._aplicar_mat_prima(produto)
+                self._aplicar_insumo(produto)
 
     def _buscar_mat_prima(self):
+        if self._fase != FASE_ITENS:
+            return
         codigo = self.ui.txt_Cod_Mat_Prima.text().strip()
         if not codigo:
             self._pesquisar_mat_prima()
@@ -281,23 +356,24 @@ class CadFichaTecnicaController(QWidget):
         try:
             produto = self._service_produto.buscar_por_codigo(codigo)
         except Exception as exc:
-            logger.exception("Falha ao buscar matéria prima")
+            logger.exception("Falha ao buscar insumo")
             QMessageBox.critical(
                 self, "Erro",
                 f"Não foi possível buscar o produto:\n{self._mensagem_erro(exc)}")
             return
         if produto:
-            self._aplicar_mat_prima(produto)
+            self._aplicar_insumo(produto)
         else:
             QMessageBox.warning(
                 self, "Atenção",
                 f"Nenhum produto com o código '{codigo}'.")
 
-    def _aplicar_mat_prima(self, produto):
-        if not produto.mat_prima:
+    def _aplicar_insumo(self, produto):
+        """Aceita matéria prima OU mão de obra como insumo da ficha."""
+        if not (produto.mat_prima or produto.mao_obra):
             QMessageBox.warning(
                 self, "Atenção",
-                f"'{produto.codigo}' não é matéria prima.")
+                f"'{produto.codigo}' não é matéria prima nem mão de obra.")
             return
         self._produto_selecionado = produto
         self.ui.txt_Cod_Mat_Prima.setText(produto.codigo)
@@ -307,10 +383,12 @@ class CadFichaTecnicaController(QWidget):
     # ---------------- itens ----------------
 
     def _adicionar_item(self):
+        if self._fase != FASE_ITENS:
+            return
         produto = self._produto_selecionado
         if produto is None:
             QMessageBox.warning(
-                self, "Atenção", "Informe a matéria prima do item.")
+                self, "Atenção", "Informe o insumo do item.")
             self.ui.txt_Cod_Mat_Prima.setFocus()
             return
 
@@ -328,7 +406,7 @@ class CadFichaTecnicaController(QWidget):
             self.ui.txt_Qtde.setFocus()
             return
 
-        # se o item já existe na ficha, atualiza a quantidade
+        # se o insumo já existe na ficha, atualiza a quantidade
         for item in self._itens:
             if item.codigo_produto == produto.codigo:
                 item.quantidade_kg = qtde
@@ -348,6 +426,8 @@ class CadFichaTecnicaController(QWidget):
         self.ui.txt_Cod_Mat_Prima.setFocus()
 
     def _excluir_item(self):
+        if self._fase != FASE_ITENS:
+            return
         indice = self.ui.tb_Itens_Batida.currentIndex()
         if not indice.isValid():
             QMessageBox.warning(
@@ -357,6 +437,8 @@ class CadFichaTecnicaController(QWidget):
         self._atualizar_tabelas()
 
     def _limpar_itens(self):
+        if self._fase != FASE_ITENS:
+            return
         resposta = QMessageBox.question(
             self, "Confirmar",
             "Remover todos os itens da ficha?",
@@ -432,7 +514,6 @@ class CadFichaTecnicaController(QWidget):
         if not self._itens:
             QMessageBox.warning(
                 self, "Atenção", "Adicione pelo menos um item à ficha.")
-            self.ui.txt_Cod_Mat_Prima.setFocus()
             return False
 
         return True
@@ -440,8 +521,7 @@ class CadFichaTecnicaController(QWidget):
     def _montar_ficha(self) -> FichaTecnica:
         return FichaTecnica(
             id=self._ficha_id,
-            produto_id=getattr(self, "_produto_acabado", None).id
-            if getattr(self, "_produto_acabado", None) else None,
+            produto_id=self._produto_acabado.id if self._produto_acabado else None,
             codigo_produto=self.ui.txt_Prod_Acabado.text().strip(),
             sacos_batida=float(
                 self.ui.txt_Sacos_Batida.text().strip().replace(",", ".")),
@@ -449,6 +529,14 @@ class CadFichaTecnicaController(QWidget):
         )
 
     def _salvar(self):
+        if self._modo not in (MODO_NOVO, MODO_EDICAO):
+            return
+        if self._fase != FASE_FINALIZADO:
+            QMessageBox.warning(
+                self, "Atenção",
+                "Finalize a inclusão dos insumos (bt_Sair_Ficha) "
+                "antes de salvar.")
+            return
         if self._service is None:
             QMessageBox.critical(
                 self, "Erro", "Service de fichas indisponível.")
@@ -458,12 +546,10 @@ class CadFichaTecnicaController(QWidget):
 
         ficha = self._montar_ficha()
         try:
-            if self._modo == ESTADO_NOVO:
+            if self._modo == MODO_NOVO:
                 ficha = self._service.salvar(ficha)
-            elif self._modo == ESTADO_EDICAO:
-                self._service.atualizar(ficha)
             else:
-                return
+                self._service.atualizar(ficha)
         except Exception as exc:
             logger.exception("Falha ao salvar ficha")
             QMessageBox.critical(
@@ -520,16 +606,16 @@ class CadFichaTecnicaController(QWidget):
         self.ui.txt_Total_Saco.clear()
         self._itens.clear()
         self._produto_selecionado = None
-        self._ficha_id = None
         self._produto_acabado = None
+        self._ficha_id = None
         self._atualizar_tabelas()
-        self._modo = ESTADO_INICIAL
-        self._estado_inicial()
+        self._modo = MODO_INICIAL
+        self._fase = FASE_CABECALHO
+        self._aplicar_estado()
 
     def _preencher(self, ficha: FichaTecnica):
         self._limpar_campos()
         self._ficha_id = ficha.id
-        self._produto_acabado = None
         self.ui.txt_Ficha.setText(str(ficha.id))
         self.ui.txt_Sacos_Batida.setText(f"{ficha.sacos_batida:.4f}")
         self.ui.txt_Prod_Acabado.setText(ficha.codigo_produto)
@@ -537,5 +623,6 @@ class CadFichaTecnicaController(QWidget):
             self._descricao_de(ficha.codigo_produto))
         self._itens = list(ficha.itens)
         self._atualizar_tabelas()
-        self._modo = ESTADO_VISUALIZACAO
-        self._estado_visualizacao()
+        self._modo = MODO_VISUALIZACAO
+        self._fase = FASE_CABECALHO
+        self._aplicar_estado()

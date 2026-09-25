@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'cad_ficha_tecnicaDyIXNr.ui'
+## Form generated from reading UI file 'cad_ficha_tecnicaRWRsyA.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -178,6 +178,7 @@ class Ui_Ficha_Tecnica(object):
         self.txt_Descricao_Prod.setObjectName(u"txt_Descricao_Prod")
         self.txt_Descricao_Prod.setMinimumSize(QSize(0, 30))
         self.txt_Descricao_Prod.setMaximumSize(QSize(16777215, 30))
+        self.txt_Descricao_Prod.setReadOnly(True)
 
         self.horizontalLayout_7.addWidget(self.txt_Descricao_Prod)
 
