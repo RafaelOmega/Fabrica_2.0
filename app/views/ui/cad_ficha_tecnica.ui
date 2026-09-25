@@ -37,7 +37,7 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QFrame" name="frm_Entrada">
+    <widget class="QFrame" name="frm_Cadasro">
      <property name="frameShape">
       <enum>QFrame::Shape::StyledPanel</enum>
      </property>
