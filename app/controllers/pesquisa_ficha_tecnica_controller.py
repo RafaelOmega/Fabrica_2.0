@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QDialog, QMessageBox
 from app.models.ficha_tecnica import FichaTecnica
 from app.utils.logger import get_logger
 from app.utils.table_utils import ajustar_larguras, configurar_tabela
-from app.views.ui_pesquisa_ficha_tecnica import Ui_Pesquisa_Ficha_Tecnica
+from app.views.ui_pesquisa_ficha_tecnica import Ui_Pesquisa_Fichas_Tecnicas
 
 try:
     from app.services.ficha_tecnica_service import FichaTecnicaService
@@ -26,7 +26,7 @@ class PesquisaFichaTecnicaController(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.ui = Ui_Pesquisa_Ficha_Tecnica()
+        self.ui = Ui_Pesquisa_Fichas_Tecnicas()
         self.ui.setupUi(self)
 
         self._service = FichaTecnicaService() if FichaTecnicaService else None
@@ -35,10 +35,13 @@ class PesquisaFichaTecnicaController(QDialog):
 
         self._modelo = QStandardItemModel(self)
         self._modelo.setHorizontalHeaderLabels(COLUNAS)
-        self.ui.tb_Ficha.setModel(self._modelo)
+        self.ui.tb_Fichas_Tecnicas.setModel(self._modelo)
 
-        configurar_tabela(self.ui.tb_Ficha, coluna_stretch=COLUNA_STRETCH,
-                          ordenavel=True)
+        configurar_tabela(
+            self.ui.tb_Fichas_Tecnicas,
+            coluna_stretch=COLUNA_STRETCH,
+            ordenavel=True,
+        )
 
         self._timer_filtro = QTimer(self)
         self._timer_filtro.setSingleShot(True)
@@ -47,7 +50,7 @@ class PesquisaFichaTecnicaController(QDialog):
         self.ui.txt_Pesquisa.textChanged.connect(self._agendar_filtro)
         self.ui.bt_Pesquisa.clicked.connect(self._pesquisar)
         self.ui.txt_Pesquisa.returnPressed.connect(self._pesquisar)
-        self.ui.tb_Ficha.doubleClicked.connect(self.accept)
+        self.ui.tb_Fichas_Tecnicas.doubleClicked.connect(self.accept)
 
         try:
             self._pesquisar()
@@ -78,10 +81,11 @@ class PesquisaFichaTecnicaController(QDialog):
                 QStandardItem(ficha.codigo_produto),
                 QStandardItem(f"{ficha.sacos_batida:.4f}"),
             ])
-        ajustar_larguras(self.ui.tb_Ficha, coluna_stretch=COLUNA_STRETCH)
+        ajustar_larguras(
+            self.ui.tb_Fichas_Tecnicas, coluna_stretch=COLUNA_STRETCH)
 
     def ficha_selecionada(self) -> FichaTecnica | None:
-        indice = self.ui.tb_Ficha.currentIndex()
+        indice = self.ui.tb_Fichas_Tecnicas.currentIndex()
         if not indice.isValid():
             return None
         linha = indice.row()
