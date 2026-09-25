@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'cad_motivo_entradawtJbwm.ui'
+## Form generated from reading UI file 'cad_motivo_entradakMGaMf.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -65,12 +65,12 @@ class Ui_Cad_Motivo_Entrada(object):
 
         self.horizontalLayout_2.addWidget(self.txt_Codigo)
 
-        self.pushButton = QPushButton(self.frm_Codigo)
-        self.pushButton.setObjectName(u"pushButton")
-        self.pushButton.setMinimumSize(QSize(40, 30))
-        self.pushButton.setMaximumSize(QSize(40, 30))
+        self.bt_Pesquisar_Motivo = QPushButton(self.frm_Codigo)
+        self.bt_Pesquisar_Motivo.setObjectName(u"bt_Pesquisar_Motivo")
+        self.bt_Pesquisar_Motivo.setMinimumSize(QSize(40, 30))
+        self.bt_Pesquisar_Motivo.setMaximumSize(QSize(40, 30))
 
-        self.horizontalLayout_2.addWidget(self.pushButton)
+        self.horizontalLayout_2.addWidget(self.bt_Pesquisar_Motivo)
 
         self.bt_Novo = QPushButton(self.frm_Codigo)
         self.bt_Novo.setObjectName(u"bt_Novo")
@@ -169,7 +169,7 @@ class Ui_Cad_Motivo_Entrada(object):
     def retranslateUi(self, Cad_Motivo_Entrada):
         Cad_Motivo_Entrada.setWindowTitle(QCoreApplication.translate("Cad_Motivo_Entrada", u"Motivo Entrada", None))
         self.lb_Codigo.setText(QCoreApplication.translate("Cad_Motivo_Entrada", u"C\u00f3digo:", None))
-        self.pushButton.setText(QCoreApplication.translate("Cad_Motivo_Entrada", u"...", None))
+        self.bt_Pesquisar_Motivo.setText(QCoreApplication.translate("Cad_Motivo_Entrada", u"...", None))
         self.bt_Novo.setText(QCoreApplication.translate("Cad_Motivo_Entrada", u"+", None))
         self.lb_Descricao.setText(QCoreApplication.translate("Cad_Motivo_Entrada", u"Descri\u00e7\u00e3o:", None))
         self.chk_Baixa_Ficha.setText(QCoreApplication.translate("Cad_Motivo_Entrada", u"Baixa Ficha Tecnica", None))
