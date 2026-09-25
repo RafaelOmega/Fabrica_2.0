@@ -9,7 +9,8 @@ Fluxo:
           -> [bt_Sair_Ficha] -> Finalizado -> Salvar
 """
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeySequence, QStandardItem, QStandardItemModel, QShortcut
+from PySide6.QtGui import (QKeySequence, QShortcut, QStandardItem,
+                           QStandardItemModel)
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 from app.models.ficha_tecnica import FichaTecnica, ItemFichaTecnica
@@ -369,11 +370,11 @@ class CadFichaTecnicaController(QWidget):
                 f"Nenhum produto com o código '{codigo}'.")
 
     def _aplicar_insumo(self, produto):
-        """Aceita matéria prima OU mão de obra como insumo da ficha."""
-        if not (produto.mat_prima or produto.mao_obra):
+        """Aceita matéria prima, mão de obra ou embalagem como insumo."""
+        if not (produto.mat_prima or produto.mao_obra or produto.embalagem):
             QMessageBox.warning(
                 self, "Atenção",
-                f"'{produto.codigo}' não é matéria prima nem mão de obra.")
+                f"'{produto.codigo}' não é insumo válido para a ficha.")
             return
         self._produto_selecionado = produto
         self.ui.txt_Cod_Mat_Prima.setText(produto.codigo)
@@ -462,7 +463,12 @@ class CadFichaTecnicaController(QWidget):
 
         total_batida = 0.0
         for item in self._itens:
-            total_batida += item.quantidade_kg
+            produto = self._produto_de(item.codigo_produto)
+            # embalagem (saco de rafia) e mão de obra não somam nos totais
+            soma = not (produto and (produto.embalagem or produto.mao_obra))
+            if soma:
+                total_batida += item.quantidade_kg
+
             self._modelo_batida.appendRow([
                 QStandardItem(item.codigo_produto),
                 QStandardItem(self._descricao_de(item.codigo_produto)),
@@ -481,14 +487,17 @@ class CadFichaTecnicaController(QWidget):
         ajustar_larguras(self.ui.tb_Itens_Batida, coluna_stretch=1)
         ajustar_larguras(self.ui.tb_Itens_Unitario, coluna_stretch=1)
 
-    def _descricao_de(self, codigo: str) -> str:
+    def _produto_de(self, codigo: str):
         if self._service_produto is None:
-            return ""
+            return None
         try:
-            produto = self._service_produto.buscar_por_codigo(codigo)
-            return produto.descricao if produto else ""
+            return self._service_produto.buscar_por_codigo(codigo)
         except Exception:
-            return ""
+            return None
+
+    def _descricao_de(self, codigo: str) -> str:
+        produto = self._produto_de(codigo)
+        return produto.descricao if produto else ""
 
     # ---------------- salvar / excluir ----------------
 
@@ -534,7 +543,7 @@ class CadFichaTecnicaController(QWidget):
         if self._fase != FASE_FINALIZADO:
             QMessageBox.warning(
                 self, "Atenção",
-                "Finalize a inclusão dos insumos (bt_Sair_Ficha) "
+                "Finalize a inclusão dos insumos (Sair Ficha) "
                 "antes de salvar.")
             return
         if self._service is None:

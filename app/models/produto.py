@@ -13,6 +13,7 @@ class Produto:
     prod_acabado: bool = False
     mao_obra: bool = False
     controla_estoque: bool = False
+    embalagem: bool = False
     id: int | None = None
 
     @classmethod
@@ -26,6 +27,7 @@ class Produto:
             prod_acabado=bool(dados.get("prod_acabado", False)),
             mao_obra=bool(dados.get("mao_obra", False)),
             controla_estoque=bool(dados.get("controla_estoque", False)),
+            embalagem=bool(dados.get("embalagem", False)),
             id=dados.get("id"),
         )
 

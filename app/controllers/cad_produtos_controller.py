@@ -76,6 +76,7 @@ class CadProdutosController(QWidget):
         self.ui.ch_Prod_Acabado.setEnabled(False)
         self.ui.ch_Mao_Obra.setEnabled(False)
         self.ui.ch_Controla_Estoque.setEnabled(False)
+        self.ui.ch_Embalagem.setEnabled(False)
         self.ui.bt_Salvar.setEnabled(False)
         self.ui.bt_Editar.setEnabled(False)
         self.ui.bt_Excluir.setEnabled(False)
@@ -91,6 +92,7 @@ class CadProdutosController(QWidget):
         self.ui.ch_Prod_Acabado.setEnabled(True)
         self.ui.ch_Mao_Obra.setEnabled(True)
         self.ui.ch_Controla_Estoque.setEnabled(True)
+        self.ui.ch_Embalagem.setEnabled(True)
         self.ui.bt_Salvar.setEnabled(True)
         self.ui.bt_Limpar.setEnabled(True)
         self.ui.bt_Editar.setEnabled(False)
@@ -108,16 +110,17 @@ class CadProdutosController(QWidget):
         self.ui.ch_Prod_Acabado.setEnabled(False)
         self.ui.ch_Mao_Obra.setEnabled(False)
         self.ui.ch_Controla_Estoque.setEnabled(False)
+        self.ui.ch_Embalagem.setEnabled(False)
         self.ui.bt_Salvar.setEnabled(False)
         self.ui.bt_Novo.setEnabled(False)
         self.ui.bt_Pesquisar_Produtos.setEnabled(False)
         self.ui.bt_Editar.setEnabled(True)
         self.ui.bt_Limpar.setEnabled(True)
-        self.ui.bt_Excluir.setEnabled(True)   # ← correção
+        self.ui.bt_Excluir.setEnabled(True)
 
     def _estado_edicao(self):
-        """Edição liberada: formulário + Salvar/Excluir/Limpar ativos."""
-        self.ui.txt_Codigo.setEnabled(False)  # código é a chave; não muda
+        """Edição: código travado (chave), campos liberados."""
+        self.ui.txt_Codigo.setEnabled(False)
         self.ui.txt_Descricao.setEnabled(True)
         self.ui.txt_Peso.setEnabled(True)
         self.ui.txt_Custo.setEnabled(True)
@@ -125,9 +128,10 @@ class CadProdutosController(QWidget):
         self.ui.ch_Prod_Acabado.setEnabled(True)
         self.ui.ch_Mao_Obra.setEnabled(True)
         self.ui.ch_Controla_Estoque.setEnabled(True)
+        self.ui.ch_Embalagem.setEnabled(True)
         self.ui.bt_Salvar.setEnabled(True)
-        self.ui.bt_Excluir.setEnabled(True)
         self.ui.bt_Limpar.setEnabled(True)
+        self.ui.bt_Excluir.setEnabled(True)
         self.ui.bt_Editar.setEnabled(False)
         self.ui.bt_Novo.setEnabled(False)
         self.ui.bt_Pesquisar_Produtos.setEnabled(False)
@@ -135,7 +139,6 @@ class CadProdutosController(QWidget):
     # ---------------- mensagens ----------------
 
     def _mensagem_erro(self, exc: Exception) -> str:
-        """Converte exceções comuns em mensagens amigáveis."""
         nome = type(exc).__name__
         if nome == "UniqueViolation":
             return "Já existe um produto com esse código."
@@ -146,7 +149,6 @@ class CadProdutosController(QWidget):
     # ---------------- acoes de tela ----------------
 
     def _iniciar_novo(self, codigo: str = ""):
-        """Entra no modo novo registro, preservando o código se informado."""
         self._limpar_campos()
         self._modo = ESTADO_NOVO
         self._estado_novo()
@@ -204,7 +206,9 @@ class CadProdutosController(QWidget):
             self._iniciar_novo(codigo)
 
     def _pesquisar(self):
-        from app.controllers.pesquisa_produto_controller import PesquisaProdutoController
+        from app.controllers.pesquisa_produto_controller import (
+            PesquisaProdutoController,
+        )
         try:
             dialogo = PesquisaProdutoController(self)
         except Exception as exc:
@@ -313,6 +317,7 @@ class CadProdutosController(QWidget):
         self.ui.ch_Prod_Acabado.setChecked(False)
         self.ui.ch_Mao_Obra.setChecked(False)
         self.ui.ch_Controla_Estoque.setChecked(False)
+        self.ui.ch_Embalagem.setChecked(False)
         self._modo = ESTADO_INICIAL
         self._codigo_original = None
         self._estado_inicial()
@@ -327,6 +332,7 @@ class CadProdutosController(QWidget):
             "prod_acabado": self.ui.ch_Prod_Acabado.isChecked(),
             "mao_obra": self.ui.ch_Mao_Obra.isChecked(),
             "controla_estoque": self.ui.ch_Controla_Estoque.isChecked(),
+            "embalagem": self.ui.ch_Embalagem.isChecked(),
         }
 
     def _preencher(self, produto):
@@ -339,6 +345,7 @@ class CadProdutosController(QWidget):
         self.ui.ch_Prod_Acabado.setChecked(produto.prod_acabado)
         self.ui.ch_Mao_Obra.setChecked(produto.mao_obra)
         self.ui.ch_Controla_Estoque.setChecked(produto.controla_estoque)
+        self.ui.ch_Embalagem.setChecked(produto.embalagem)
         self._codigo_original = produto.codigo
         self._modo = ESTADO_VISUALIZACAO
         self._estado_visualizacao()

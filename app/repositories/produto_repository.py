@@ -9,7 +9,7 @@ logger = get_logger("produto_repository")
 # Colunas para INSERT/UPDATE (id é auto-gerado pelo banco)
 _COLUNAS = (
     "codigo, descricao, peso, custo, "
-    "mat_prima, prod_acabado, mao_obra, controla_estoque"
+    "mat_prima, prod_acabado, mao_obra, controla_estoque, embalagem"
 )
 
 
@@ -23,12 +23,12 @@ class ProdutoRepository:
             with self._conn.cursor() as cur:
                 cur.execute(
                     f"INSERT INTO produtos ({_COLUNAS}) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
                     "RETURNING id",
                     (produto.codigo, produto.descricao, produto.peso,
                      produto.custo, produto.mat_prima,
                      produto.prod_acabado, produto.mao_obra,
-                     produto.controla_estoque),
+                     produto.controla_estoque, produto.embalagem),
                 )
                 produto.id = cur.fetchone()[0]
         logger.info("Produto inserido: %s (id=%s)", produto.codigo, produto.id)
@@ -42,13 +42,14 @@ class ProdutoRepository:
                     UPDATE produtos
                        SET descricao = %s, peso = %s, custo = %s,
                            mat_prima = %s, prod_acabado = %s,
-                           mao_obra = %s, controla_estoque = %s
+                           mao_obra = %s, controla_estoque = %s,
+                           embalagem = %s
                      WHERE codigo = %s
                     """,
                     (produto.descricao, produto.peso, produto.custo,
                      produto.mat_prima, produto.prod_acabado,
                      produto.mao_obra, produto.controla_estoque,
-                     produto.codigo),
+                     produto.embalagem, produto.codigo),
                 )
         logger.info("Produto atualizado: %s", produto.codigo)
         return True
@@ -95,5 +96,5 @@ class ProdutoRepository:
             codigo=linha[1], descricao=linha[2], peso=linha[3],
             custo=linha[4], mat_prima=linha[5],
             prod_acabado=linha[6], mao_obra=linha[7],
-            controla_estoque=linha[8],
+            controla_estoque=linha[8], embalagem=linha[9],
         )
