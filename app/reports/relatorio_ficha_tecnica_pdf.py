@@ -47,6 +47,12 @@ def _moeda(valor: float) -> str:
     return "R$ " + texto.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+def _moeda4(valor: float) -> str:
+    """Formata valor monetário com 4 casas: R$ 0,4167 (sem locale)."""
+    texto = f"{valor:,.4f}"
+    return "R$ " + texto.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
 def _numero(valor: float, casas: int = 4) -> str:
     texto = f"{valor:,.{casas}f}"
     return texto.replace(",", "X").replace(".", ",").replace("X", ".")
@@ -132,8 +138,8 @@ def _secao_ficha(ficha: FichaTecnicaRelatorio) -> list:
             _numero(item.quantidade_kg, 4),
             # Custo/Saco: apenas informativo (custo cadastrado do produto)
             _moeda(item.custo_saco) if item.custo_saco is not None else "—",
-            # Custo/kg: custo do saco / kg do saco
-            _moeda(item.custo_kg) if item.custo_kg is not None else "—",
+            # Custo/kg: custo cadastrado / peso do produto (4 casas)
+            _moeda4(item.custo_kg) if item.custo_kg is not None else "—",
         ])
     if len(dados) == 1:
         dados.append(["—", "sem insumos cadastrados", "—", "—", "—"])
