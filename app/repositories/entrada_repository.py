@@ -106,8 +106,12 @@ class EntradaRepository:
         with self._conn:
             with self._conn.cursor() as cur:
                 cur.execute(
-                    f"SELECT id, {_COLUNAS} FROM entradas "
-                    "WHERE sequencia = %s",
+                    "SELECT e.id, e.sequencia, e.data_entrada, "
+                    "e.motivo_entrada_id, m.codigo, m.descricao "
+                    "FROM entradas e "
+                    "LEFT JOIN motivos_entrada m "
+                    "  ON m.id = e.motivo_entrada_id "
+                    "WHERE e.sequencia = %s",
                     (sequencia,),
                 )
                 linha = cur.fetchone()

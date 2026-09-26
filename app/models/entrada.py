@@ -32,7 +32,6 @@ class ItemEntrada:
 
 
 @dataclass
-@dataclass
 class Entrada:
     motivo_id: int | None = None
     motivo_codigo: str = ""      # exibição (JOIN com motivos)
