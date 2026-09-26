@@ -4,6 +4,7 @@
 Layout:
   - Cabeçalho fixo: título, período do filtro e emissão
   - Uma seção por ficha: identificação + tabela de insumos + custo da batida
+  - Valor unitário do produto acabado junto à descrição (custo_batida / sacos)
   - Ficha nunca quebrada no meio: cada seção entra inteira na página
   - Rodapé fixo: sistema à esquerda, "Página X de Y" à direita
 """
@@ -112,13 +113,22 @@ def _cabecalho(canvas, periodo: str):
     canvas.restoreState()
 
 
+def _valor_unitario(ficha: FichaTecnicaRelatorio) -> float | None:
+    """Valor unitário do produto acabado (custo da batida / sacos por batida)."""
+    if ficha.sacos_batida <= 0:
+        return None
+    return ficha.custo_batida / ficha.sacos_batida
+
+
 def _secao_ficha(ficha: FichaTecnicaRelatorio) -> list:
-    barra = Table(
-        [[Paragraph(
-            f"<b>Ficha {ficha.id}</b> — {ficha.codigo_produto} · "
-            f"{ficha.descricao_produto}", _ESTILO_BARRA)]],
-        colWidths=[_LARGURA],
-    )
+    # valor unitário junto à descrição do produto acabado (sem coluna nova)
+    unitario = _valor_unitario(ficha)
+    titulo = (f"<b>Ficha {ficha.id}</b> — {ficha.codigo_produto} · "
+              f"{ficha.descricao_produto}")
+    if unitario is not None:
+        titulo += f" · {_moeda(unitario)}/saco"
+    barra = Table([[Paragraph(titulo, _ESTILO_BARRA)]],
+                  colWidths=[_LARGURA])
     barra.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), AZUL),
         ("LEFTPADDING", (0, 0), (-1, -1), 8),
