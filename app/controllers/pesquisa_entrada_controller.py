@@ -78,7 +78,8 @@ class PesquisaEntradaController(QDialog):
             self._modelo.appendRow([
                 QStandardItem(str(entrada.id)),
                 QStandardItem(data),
-                QStandardItem(entrada.motivo_codigo),
+                QStandardItem(
+                    entrada.motivo_descricao or entrada.motivo_codigo),
                 QStandardItem(f"{entrada.total:.2f}"),
             ])
         ajustar_larguras(self.ui.tb_Entradas, coluna_stretch=COLUNA_STRETCH)

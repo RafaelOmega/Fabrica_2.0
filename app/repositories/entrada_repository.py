@@ -87,7 +87,12 @@ class EntradaRepository:
         with self._conn:
             with self._conn.cursor() as cur:
                 cur.execute(
-                    f"SELECT id, {_COLUNAS} FROM entradas WHERE id = %s",
+                    "SELECT e.id, e.sequencia, e.data_entrada, "
+                    "e.motivo_entrada_id, m.codigo, m.descricao "
+                    "FROM entradas e "
+                    "LEFT JOIN motivos_entrada m "
+                    "  ON m.id = e.motivo_entrada_id "
+                    "WHERE e.id = %s",
                     (entrada_id,),
                 )
                 linha = cur.fetchone()
@@ -119,12 +124,12 @@ class EntradaRepository:
                 cur.execute(
                     """
                     SELECT e.id, e.sequencia, e.data_entrada,
-                           e.motivo_entrada_id, m.codigo,
+                           e.motivo_entrada_id, m.codigo, m.descricao,
                            (SELECT COALESCE(SUM(quantidade * custo), 0)
                               FROM itens_entrada
                              WHERE entrada_id = e.id) AS total
                       FROM entradas e
-                      JOIN motivos_entrada m
+                      LEFT JOIN motivos_entrada m
                         ON m.id = e.motivo_entrada_id
                      WHERE CAST(e.sequencia AS TEXT) ILIKE %s
                         OR m.codigo ILIKE %s
@@ -165,5 +170,6 @@ class EntradaRepository:
             sequencia=linha[1],
             data_entrada=data.isoformat() if isinstance(data, date) else str(data),
             motivo_id=linha[3],
-            motivo_codigo=linha[4] if len(linha) > 4 else "",
+            motivo_codigo=linha[4] or "",
+            motivo_descricao=linha[5] or "",
         )

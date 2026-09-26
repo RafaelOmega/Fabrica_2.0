@@ -32,9 +32,11 @@ class ItemEntrada:
 
 
 @dataclass
+@dataclass
 class Entrada:
     motivo_id: int | None = None
-    motivo_codigo: str = ""  # apenas exibição (vem do JOIN com motivos)
+    motivo_codigo: str = ""      # exibição (JOIN com motivos)
+    motivo_descricao: str = ""   # exibição (JOIN com motivos)
     data_entrada: str = ""  # ISO AAAA-MM-DD
     sequencia: int | None = None
     id: int | None = None
@@ -49,6 +51,7 @@ class Entrada:
         return cls(
             motivo_id=dados.get("motivo_id"),
             motivo_codigo=str(dados.get("motivo_codigo", "")),
+            motivo_descricao=str(dados.get("motivo_descricao", "")),
             data_entrada=str(dados.get("data_entrada", "")),
             sequencia=dados.get("sequencia"),
             id=dados.get("id"),
