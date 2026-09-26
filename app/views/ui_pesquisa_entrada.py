@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'pesquisa_entradakafIHI.ui'
+## Form generated from reading UI file 'pesquisa_entradaVIeTEN.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -19,21 +19,21 @@ from PySide6.QtWidgets import (QApplication, QDialog, QFrame, QHBoxLayout,
     QHeaderView, QLabel, QLineEdit, QPushButton,
     QSizePolicy, QTableView, QVBoxLayout, QWidget)
 
-class Ui_Pesquisa_Prod(object):
-    def setupUi(self, Pesquisa_Prod):
-        if not Pesquisa_Prod.objectName():
-            Pesquisa_Prod.setObjectName(u"Pesquisa_Prod")
-        Pesquisa_Prod.resize(771, 427)
+class Ui_Pesquisa_Entrada(object):
+    def setupUi(self, Pesquisa_Entrada):
+        if not Pesquisa_Entrada.objectName():
+            Pesquisa_Entrada.setObjectName(u"Pesquisa_Entrada")
+        Pesquisa_Entrada.resize(771, 427)
         font = QFont()
         font.setFamilies([u"Segoe UI Semibold"])
         font.setPointSize(10)
         font.setBold(True)
-        Pesquisa_Prod.setFont(font)
-        self.verticalLayout = QVBoxLayout(Pesquisa_Prod)
+        Pesquisa_Entrada.setFont(font)
+        self.verticalLayout = QVBoxLayout(Pesquisa_Entrada)
         self.verticalLayout.setSpacing(0)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.frm_Filtro = QFrame(Pesquisa_Prod)
+        self.frm_Filtro = QFrame(Pesquisa_Entrada)
         self.frm_Filtro.setObjectName(u"frm_Filtro")
         self.frm_Filtro.setFrameShape(QFrame.Shape.StyledPanel)
         self.frm_Filtro.setFrameShadow(QFrame.Shadow.Raised)
@@ -65,7 +65,7 @@ class Ui_Pesquisa_Prod(object):
 
         self.verticalLayout.addWidget(self.frm_Filtro)
 
-        self.frm_Lista = QFrame(Pesquisa_Prod)
+        self.frm_Lista = QFrame(Pesquisa_Entrada)
         self.frm_Lista.setObjectName(u"frm_Lista")
         self.frm_Lista.setFrameShape(QFrame.Shape.StyledPanel)
         self.frm_Lista.setFrameShadow(QFrame.Shadow.Raised)
@@ -82,14 +82,14 @@ class Ui_Pesquisa_Prod(object):
         self.verticalLayout.addWidget(self.frm_Lista)
 
 
-        self.retranslateUi(Pesquisa_Prod)
+        self.retranslateUi(Pesquisa_Entrada)
 
-        QMetaObject.connectSlotsByName(Pesquisa_Prod)
+        QMetaObject.connectSlotsByName(Pesquisa_Entrada)
     # setupUi
 
-    def retranslateUi(self, Pesquisa_Prod):
-        Pesquisa_Prod.setWindowTitle(QCoreApplication.translate("Pesquisa_Prod", u"Pesquisa Entradas", None))
-        self.lb_Pesquisa.setText(QCoreApplication.translate("Pesquisa_Prod", u"Pesquisar:", None))
-        self.bt_Pesquisa.setText(QCoreApplication.translate("Pesquisa_Prod", u"Confirmar", None))
+    def retranslateUi(self, Pesquisa_Entrada):
+        Pesquisa_Entrada.setWindowTitle(QCoreApplication.translate("Pesquisa_Entrada", u"Pesquisa Entradas", None))
+        self.lb_Pesquisa.setText(QCoreApplication.translate("Pesquisa_Entrada", u"Pesquisar:", None))
+        self.bt_Pesquisa.setText(QCoreApplication.translate("Pesquisa_Entrada", u"Confirmar", None))
     # retranslateUi
 

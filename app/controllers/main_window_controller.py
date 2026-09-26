@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QLabel, QMainWindow, QVBoxLayout, QWidget
 from app.controllers.cad_produtos_controller import CadProdutosController
 from app.controllers.cad_motivo_entrada_controller import CadMotivoEntradaController
 from app.controllers.cad_ficha_tecnica_controller import CadFichaTecnicaController
+from app.controllers.entrada_controller import EntradaController
 from app.utils.logger import get_logger
 from app.views.ui_main_window import Ui_MainWindow
 
@@ -39,6 +40,7 @@ class MainWindowController(QMainWindow):
             pai)
         self._criadores["ficha_tecnica"] = lambda pai: CadFichaTecnicaController(
             pai)
+        self._criadores["entrada"] = lambda pai: EntradaController(pai)
 
         logger.info("Janela principal iniciada")
 
