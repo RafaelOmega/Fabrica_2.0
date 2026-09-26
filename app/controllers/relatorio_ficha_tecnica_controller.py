@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
 """Controller da tela de Relatório de Fichas Técnicas.
 
-Responsabilidade: APENAS controle de tela (filtros, botões, diálogo de
-salvamento). Dados via RelatorioFichaTecnicaService; PDF via
-app.reports.relatorio_ficha_tecnica_pdf.
+Responsabilidade: APENAS controle de tela (filtros, botões).
+Ao filtrar, abre a pré-visualização (mesmo layout do PDF), de onde
+o usuário gera PDF, XLSX ou CSV. Dados via RelatorioFichaTecnicaService.
 """
-from datetime import datetime
+from PySide6.QtCore import QDate
+from PySide6.QtWidgets import QMessageBox, QWidget
 
-from PySide6.QtCore import QDate, QUrl
-from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QFileDialog, QMessageBox, QWidget
-
-from app.reports.relatorio_ficha_tecnica_pdf import gerar_pdf_ficha_tecnica
 from app.services.relatorio_ficha_tecnica_service import (
     RelatorioFichaTecnicaService,
 )
@@ -22,7 +18,7 @@ logger = get_logger("relatorio_ficha_tecnica")
 
 
 class RelFichaTecnicaController(QWidget):
-    """Tela de emissão do relatório de fichas técnicas (PDF)."""
+    """Tela de filtros do relatório de fichas técnicas."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -74,22 +70,13 @@ class RelFichaTecnicaController(QWidget):
             f"Período: {self.ui.dt_Data_Inicial.date().toString('dd/MM/yyyy')}"
             f" a {self.ui.dt_Data_Final.date().toString('dd/MM/yyyy')}"
         )
-        sugerido = f"Relatorio_Fichas_Tecnicas_{datetime.now():%Y-%m-%d}.pdf"
-        caminho, _ = QFileDialog.getSaveFileName(
-            self, "Salvar relatório", sugerido, "PDF (*.pdf)")
-        if not caminho:
-            return
 
-        try:
-            gerar_pdf_ficha_tecnica(fichas, caminho, periodo=periodo)
-        except Exception as exc:
-            QMessageBox.critical(self, "Relatório", self._mensagem_erro(exc))
-            return
-
-        logger.info("Relatório gerado: %s (%s fichas)", caminho, len(fichas))
-        QMessageBox.information(
-            self, "Relatório", f"PDF gerado com sucesso:\n{caminho}")
-        QDesktopServices.openUrl(QUrl.fromLocalFile(caminho))
+        # pré-visualização: mesmo layout do PDF, com PDF/XLSX/CSV
+        from app.controllers.relatorio_ficha_tecnica_preview_controller import (
+            RelFichaTecnicaPreviewController,
+        )
+        dialogo = RelFichaTecnicaPreviewController(fichas, periodo, self)
+        dialogo.exec()
 
     # ---------------- mensagens ----------------
 
