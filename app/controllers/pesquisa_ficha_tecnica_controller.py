@@ -15,9 +15,8 @@ except ImportError:
     FichaTecnicaService = None
 
 logger = get_logger("pesquisa_ficha_tecnica")
-
-COLUNAS = ["Ficha", "Produto Acabado", "Sacos/Batida"]
-COLUNA_STRETCH = 1
+COLUNAS = ["Ficha", "Produto Acabado", "Descrição", "Sacos/Batida"]
+COLUNA_STRETCH = 2  # descrição ocupa o espaço livre
 DEBOUNCE_MS = 300
 
 
@@ -36,7 +35,6 @@ class PesquisaFichaTecnicaController(QDialog):
         self._modelo = QStandardItemModel(self)
         self._modelo.setHorizontalHeaderLabels(COLUNAS)
         self.ui.tb_Fichas_Tecnicas.setModel(self._modelo)
-
         configurar_tabela(
             self.ui.tb_Fichas_Tecnicas,
             coluna_stretch=COLUNA_STRETCH,
@@ -46,7 +44,6 @@ class PesquisaFichaTecnicaController(QDialog):
         self._timer_filtro = QTimer(self)
         self._timer_filtro.setSingleShot(True)
         self._timer_filtro.timeout.connect(self._pesquisar)
-
         self.ui.txt_Pesquisa.textChanged.connect(self._agendar_filtro)
         self.ui.bt_Pesquisa.clicked.connect(self._pesquisar)
         self.ui.txt_Pesquisa.returnPressed.connect(self._pesquisar)
@@ -73,12 +70,12 @@ class PesquisaFichaTecnicaController(QDialog):
             logger.exception("Falha na consulta")
             QMessageBox.critical(self, "Erro", f"Falha na consulta:\n{exc}")
             return
-
         self._modelo.removeRows(0, self._modelo.rowCount())
         for ficha in registros:
             self._modelo.appendRow([
                 QStandardItem(str(ficha.id)),
                 QStandardItem(ficha.codigo_produto),
+                QStandardItem(ficha.descricao_produto or ""),
                 QStandardItem(f"{ficha.sacos_batida:.4f}"),
             ])
         ajustar_larguras(

@@ -29,6 +29,7 @@ class ItemFichaTecnica:
 class FichaTecnica:
     produto_id: int | None = None
     codigo_produto: str = ""
+    descricao_produto: str = ""  # descrição do produto acabado (JOIN produtos)
     sacos_batida: float = 0.0
     id: int | None = None
     itens: list[ItemFichaTecnica] = field(default_factory=list)
@@ -38,6 +39,7 @@ class FichaTecnica:
         return cls(
             produto_id=dados.get("produto_id"),
             codigo_produto=str(dados.get("codigo_produto", "")),
+            descricao_produto=str(dados.get("descricao_produto", "")),
             sacos_batida=float(dados.get("sacos_batida", 0.0) or 0.0),
             id=dados.get("id"),
             itens=[ItemFichaTecnica.from_dict(i)
@@ -45,5 +47,4 @@ class FichaTecnica:
         )
 
     def to_dict(self) -> dict:
-        dados = asdict(self)
-        return dados
+        return asdict(self)

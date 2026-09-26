@@ -5,7 +5,6 @@ from app.models.ficha_tecnica import FichaTecnica, ItemFichaTecnica
 from app.utils.logger import get_logger
 
 logger = get_logger("ficha_tecnica_repository")
-
 _COLUNAS_FICHA = "produto_id, codigo_produto, sacos_batida"
 _COLUNAS_ITEM = "ficha_id, produto_id, codigo_produto, quantidade_kg"
 
@@ -96,21 +95,29 @@ class FichaTecnicaRepository:
         return ficha
 
     def pesquisar(self, filtro: str = "") -> list[FichaTecnica]:
+        """Fichas com a descrição do produto acabado (JOIN produtos).
+
+        Busca por código do produto, descrição ou ID da ficha.
+        """
         termo = f"%{filtro}%"
         with self._conn:
             with self._conn.cursor() as cur:
                 cur.execute(
-                    f"""
-                    SELECT f.id, {_COLUNAS_FICHA}
+                    """
+                    SELECT f.id, f.produto_id, f.codigo_produto,
+                           f.sacos_batida, p.descricao
                       FROM fichas_tecnicas f
+                      LEFT JOIN produtos p ON p.id = f.produto_id
                      WHERE f.codigo_produto ILIKE %s
+                        OR p.descricao ILIKE %s
                         OR CAST(f.id AS TEXT) ILIKE %s
                      ORDER BY f.id
                     """,
-                    (termo, termo),
+                    (termo, termo, termo),
                 )
                 linhas = cur.fetchall()
-        return [f for f in (self._linha_para_ficha(l) for l in linhas) if f]
+        return [f for f in (self._linha_para_ficha(l[:4], l[4] or "")
+                            for l in linhas) if f]
 
     # ---------------- auxiliares ----------------
 
@@ -130,7 +137,7 @@ class FichaTecnicaRepository:
         ]
 
     @staticmethod
-    def _linha_para_ficha(linha) -> FichaTecnica:
+    def _linha_para_ficha(linha, descricao: str = "") -> FichaTecnica | None:
         if not linha:
             return None
         return FichaTecnica(
@@ -138,4 +145,5 @@ class FichaTecnicaRepository:
             produto_id=linha[1],
             codigo_produto=linha[2],
             sacos_batida=float(linha[3]),
+            descricao_produto=descricao,
         )
