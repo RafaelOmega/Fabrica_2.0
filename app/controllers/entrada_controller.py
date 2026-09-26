@@ -3,6 +3,7 @@
 
 Responsabilidade: APENAS controle de tela (botões, campos, navegação).
 Operações de dados são delegadas aos services.
+Regras especiais de produto ficam em app.services.regras_entrada.
 
 Fluxo (espelhado na Ficha Técnica):
   Inicial -> Novo (cabeçalho) -> [bt_Abrir_Itens] -> Itens
@@ -14,6 +15,7 @@ from PySide6.QtGui import (QKeySequence, QShortcut, QStandardItem,
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 from app.models.entrada import Entrada, ItemEntrada
+from app.services.regras_entrada import calcular_custo, tem_regra_especial
 from app.utils.logger import get_logger
 from app.utils.table_utils import ajustar_larguras, configurar_tabela
 from app.views.ui_entrada import Ui_Entrada
@@ -62,6 +64,10 @@ class EntradaController(QWidget):
 
         self.ui = Ui_Entrada()
         self.ui.setupUi(self)
+
+        # campos do Milho 60KG: ocultos por padrão
+        self.ui.lb_Milho.setVisible(False)
+        self.ui.txt_Milho.setVisible(False)
 
         self._service = EntradaService() if EntradaService else None
         self._service_produto = ProdutoService() if ProdutoService else None
@@ -134,6 +140,7 @@ class EntradaController(QWidget):
         self.ui.txt_Qtde.returnPressed.connect(
             lambda: self.ui.txt_Custo.setFocus())
         self.ui.txt_Custo.returnPressed.connect(self._adicionar_item)
+        self.ui.txt_Milho.textChanged.connect(self._ao_digitar_milho)
         self.ui.cmb_Motivo.currentIndexChanged.connect(self._ao_mudar_motivo)
         self._at_f2 = QShortcut(QKeySequence(Qt.Key.Key_F2), self)
         self._at_f2.activated.connect(self._novo)
@@ -341,13 +348,12 @@ class EntradaController(QWidget):
         """Hook para o acionamento da produção.
 
         Quando o motivo selecionado tem baixa_producao=True (Produção),
-        a produção será acionada aqui — junto dos campos de Milho,
-        após os testes dos controles.
+        a produção será acionada aqui — após os testes dos controles.
         """
         motivo = self._motivo_atual()
         if motivo and motivo.baixa_producao:
             logger.info("Motivo de produção selecionado: %s", motivo.codigo)
-            # TODO: acionamento da produção (campos Milho 60KG)
+            # TODO: acionamento da produção
 
     # ---------------- insumo / itens ----------------
 
@@ -390,8 +396,37 @@ class EntradaController(QWidget):
         self._produto_selecionado = produto
         self.ui.txt_Cod_Prod.setText(produto.codigo)
         self.ui.txt_Descricao_Prod.setText(produto.descricao)
-        self.ui.txt_Custo.setText(f"{produto.custo:.4f}".replace(".", ","))
-        self.ui.txt_Qtde.setFocus()
+
+        if tem_regra_especial(produto.codigo):
+            # produto com regra especial: campos visíveis, custo calculado
+            self.ui.lb_Milho.setVisible(True)
+            self.ui.txt_Milho.setVisible(True)
+            self.ui.txt_Milho.clear()
+            self.ui.txt_Custo.clear()
+            self.ui.txt_Custo.setEnabled(False)
+            self.ui.txt_Milho.setFocus()
+        else:
+            self.ui.lb_Milho.setVisible(False)
+            self.ui.txt_Milho.setVisible(False)
+            self.ui.txt_Custo.setEnabled(True)
+            self.ui.txt_Custo.setText(f"{produto.custo:.4f}".replace(".", ","))
+            self.ui.txt_Qtde.setFocus()
+
+    def _ao_digitar_milho(self):
+        """Mostra o custo calculado enquanto digita o valor da sacaria."""
+        produto = self._produto_selecionado
+        if produto is None or not tem_regra_especial(produto.codigo):
+            return
+        try:
+            valor = float(self.ui.txt_Milho.text().strip().replace(",", "."))
+        except ValueError:
+            self.ui.txt_Custo.clear()
+            return
+        custo = calcular_custo(produto.codigo, valor)
+        if custo is None:
+            self.ui.txt_Custo.clear()
+            return
+        self.ui.txt_Custo.setText(f"{custo:.4f}".replace(".", ","))
 
     def _adicionar_item(self):
         if self._fase != FASE_ITENS:
@@ -416,19 +451,33 @@ class EntradaController(QWidget):
             self.ui.txt_Qtde.setFocus()
             return
 
-        try:
-            custo = float(
-                self.ui.txt_Custo.text().strip().replace(",", ".") or 0)
-        except ValueError:
-            QMessageBox.warning(
-                self, "Atenção", "Informe um custo válido.")
-            self.ui.txt_Custo.setFocus()
-            return
-        if custo < 0:
-            QMessageBox.warning(
-                self, "Atenção", "O custo não pode ser negativo.")
-            self.ui.txt_Custo.setFocus()
-            return
+        if tem_regra_especial(produto.codigo):
+            # custo vem da regra especial (valor da sacaria / 60)
+            try:
+                valor = float(
+                    self.ui.txt_Milho.text().strip().replace(",", "."))
+            except ValueError:
+                valor = 0.0
+            custo = calcular_custo(produto.codigo, valor)
+            if custo is None:
+                QMessageBox.warning(
+                    self, "Atenção", "Informe o valor do Milho 60KG.")
+                self.ui.txt_Milho.setFocus()
+                return
+        else:
+            try:
+                custo = float(
+                    self.ui.txt_Custo.text().strip().replace(",", ".") or 0)
+            except ValueError:
+                QMessageBox.warning(
+                    self, "Atenção", "Informe um custo válido.")
+                self.ui.txt_Custo.setFocus()
+                return
+            if custo < 0:
+                QMessageBox.warning(
+                    self, "Atenção", "O custo não pode ser negativo.")
+                self.ui.txt_Custo.setFocus()
+                return
 
         # se o produto já existe na entrada, atualiza qtde/custo
         for item in self._itens:
@@ -449,6 +498,9 @@ class EntradaController(QWidget):
         self.ui.txt_Descricao_Prod.clear()
         self.ui.txt_Qtde.clear()
         self.ui.txt_Custo.clear()
+        self.ui.lb_Milho.setVisible(False)
+        self.ui.txt_Milho.setVisible(False)
+        self.ui.txt_Milho.clear()
         self._atualizar_tabela()
         self.ui.txt_Cod_Prod.setFocus()
 
@@ -601,6 +653,9 @@ class EntradaController(QWidget):
         self.ui.txt_Qtde.clear()
         self.ui.txt_Custo.clear()
         self.ui.txt_Total_Itens.clear()
+        self.ui.lb_Milho.setVisible(False)
+        self.ui.txt_Milho.setVisible(False)
+        self.ui.txt_Milho.clear()
         self._itens.clear()
         self._produto_selecionado = None
         self._entrada_id = None
