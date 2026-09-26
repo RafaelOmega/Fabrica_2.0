@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass, field
 @dataclass
 class ItemEntrada:
     produto_id: int | None = None
-    codigo_produto: str = ""
+    codigo_produto: str = ""  # apenas exibição (vem do JOIN com produtos)
     quantidade: float = 0.0
     custo: float = 0.0
     entrada_id: int | None = None
@@ -34,8 +34,9 @@ class ItemEntrada:
 @dataclass
 class Entrada:
     motivo_id: int | None = None
-    motivo_codigo: str = ""
+    motivo_codigo: str = ""  # apenas exibição (vem do JOIN com motivos)
     data_entrada: str = ""  # ISO AAAA-MM-DD
+    sequencia: int | None = None
     id: int | None = None
     itens: list[ItemEntrada] = field(default_factory=list)
 
@@ -49,6 +50,7 @@ class Entrada:
             motivo_id=dados.get("motivo_id"),
             motivo_codigo=str(dados.get("motivo_codigo", "")),
             data_entrada=str(dados.get("data_entrada", "")),
+            sequencia=dados.get("sequencia"),
             id=dados.get("id"),
             itens=[ItemEntrada.from_dict(i) for i in dados.get("itens", [])],
         )

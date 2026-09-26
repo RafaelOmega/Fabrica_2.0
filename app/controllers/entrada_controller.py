@@ -281,7 +281,7 @@ class EntradaController(QWidget):
             return
 
         try:
-            entrada = self._service.buscar_por_id(int(texto))
+            entrada = self._service.buscar_por_sequencia(int(texto))
         except Exception as exc:
             logger.exception("Falha ao buscar entrada")
             QMessageBox.critical(
@@ -516,7 +516,6 @@ class EntradaController(QWidget):
         return Entrada(
             id=self._entrada_id,
             motivo_id=motivo.id if motivo else None,
-            motivo_codigo=motivo.codigo if motivo else "",
             data_entrada=self.ui.dt_Entrada.date().toString("yyyy-MM-dd"),
             itens=list(self._itens),
         )
@@ -552,7 +551,7 @@ class EntradaController(QWidget):
         logger.info("Entrada salva: id=%s", entrada.id)
         QMessageBox.information(
             self, "Sucesso",
-            f"Entrada salva com sucesso. Sequência: {entrada.id}")
+            f"Entrada salva com sucesso. Sequência: {entrada.sequencia}")
         self._limpar_campos()
         self.ui.txt_Sequencia.setFocus()
 
@@ -606,7 +605,7 @@ class EntradaController(QWidget):
     def _preencher(self, entrada: Entrada):
         self._limpar_campos()
         self._entrada_id = entrada.id
-        self.ui.txt_Sequencia.setText(str(entrada.id))
+        self.ui.txt_Sequencia.setText(str(entrada.sequencia or entrada.id))
         data = QDate.fromString(entrada.data_entrada, "yyyy-MM-dd")
         if data.isValid():
             self.ui.dt_Entrada.setDate(data)

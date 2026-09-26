@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QDialog, QMessageBox
 from app.models.entrada import Entrada
 from app.utils.logger import get_logger
 from app.utils.table_utils import ajustar_larguras, configurar_tabela
-from app.views.ui_pesquisa_entrada import Ui_Pesquisa_Prod
+from app.views.ui_pesquisa_entrada import Ui_Pesquisa_Entrada
 
 try:
     from app.services.entrada_service import EntradaService
@@ -25,7 +25,7 @@ class PesquisaEntradaController(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.ui = Ui_Pesquisa_Prod()
+        self.ui = Ui_Pesquisa_Entrada()
         self.ui.setupUi(self)
 
         self._service = EntradaService() if EntradaService else None

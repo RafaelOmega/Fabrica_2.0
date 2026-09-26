@@ -26,3 +26,6 @@ class EntradaService:
 
     def pesquisar(self, filtro: str = "") -> list[Entrada]:
         return self._repo.pesquisar(filtro)
+
+    def buscar_por_sequencia(self, sequencia: int) -> Entrada | None:
+        return self._repo.buscar_por_sequencia(sequencia)
