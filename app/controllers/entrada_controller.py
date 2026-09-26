@@ -49,6 +49,12 @@ FASE_FINALIZADO = "finalizado"
 COLUNAS_ITENS = ["Código", "Insumo", "Qtde", "Custo", "Total"]
 
 
+def _moeda(valor: float) -> str:
+    """Formata valor no padrão monetário brasileiro: R$ 1.234,56."""
+    texto = f"{valor:,.2f}"  # 1,234.56 (padrão US)
+    return "R$ " + texto.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
 class EntradaController(QWidget):
 
     def __init__(self, parent=None):
@@ -479,10 +485,10 @@ class EntradaController(QWidget):
                 QStandardItem(item.codigo_produto),
                 QStandardItem(self._descricao_de(item.codigo_produto)),
                 QStandardItem(f"{item.quantidade:.4f}"),
-                QStandardItem(f"{item.custo:.2f}"),
-                QStandardItem(f"{item.total:.2f}"),
+                QStandardItem(_moeda(item.custo)),
+                QStandardItem(_moeda(item.total)),
             ])
-        self.ui.txt_Total_Itens.setText(f"{total:.2f}")
+        self.ui.txt_Total_Itens.setText(_moeda(total))
         ajustar_larguras(self.ui.tb_Itens, coluna_stretch=1)
 
     def _produto_de(self, codigo: str):

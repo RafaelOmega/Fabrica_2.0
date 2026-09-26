@@ -38,12 +38,15 @@ class Entrada:
     motivo_descricao: str = ""   # exibição (JOIN com motivos)
     data_entrada: str = ""  # ISO AAAA-MM-DD
     sequencia: int | None = None
+    total_sql: float = 0.0       # total vindo da pesquisa (soma no SQL)
     id: int | None = None
     itens: list[ItemEntrada] = field(default_factory=list)
 
     @property
     def total(self) -> float:
-        return sum(i.total for i in self.itens)
+        if self.itens:
+            return sum(i.total for i in self.itens)
+        return self.total_sql
 
     @classmethod
     def from_dict(cls, dados: dict) -> "Entrada":

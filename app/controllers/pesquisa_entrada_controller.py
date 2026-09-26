@@ -20,6 +20,12 @@ COLUNA_STRETCH = 2
 DEBOUNCE_MS = 300
 
 
+def _moeda(valor: float) -> str:
+    """Formata valor no padrão monetário brasileiro: R$ 1.234,56."""
+    texto = f"{valor:,.2f}"  # 1,234.56 (padrão US)
+    return "R$ " + texto.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
 class PesquisaEntradaController(QDialog):
 
     def __init__(self, parent=None):
@@ -80,7 +86,7 @@ class PesquisaEntradaController(QDialog):
                 QStandardItem(data),
                 QStandardItem(
                     entrada.motivo_descricao or entrada.motivo_codigo),
-                QStandardItem(f"{entrada.total:.2f}"),
+                QStandardItem(_moeda(entrada.total)),
             ])
         ajustar_larguras(self.ui.tb_Entradas, coluna_stretch=COLUNA_STRETCH)
 

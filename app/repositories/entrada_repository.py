@@ -176,4 +176,5 @@ class EntradaRepository:
             motivo_id=linha[3],
             motivo_codigo=linha[4] or "",
             motivo_descricao=linha[5] or "",
+            total_sql=float(linha[6]) if len(linha) > 6 else 0.0,
         )
