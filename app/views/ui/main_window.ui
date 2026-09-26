@@ -187,6 +187,7 @@
     </property>
     <addaction name="actionEstoque"/>
     <addaction name="actionFichaKardexProduto"/>
+    <addaction name="actionRel_Fichas_Tecnicas"/>
    </widget>
    <addaction name="menuCadastros"/>
    <addaction name="menuLan_amentos"/>
@@ -225,6 +226,11 @@
   <action name="actionFichaKardexProduto">
    <property name="text">
     <string>Ficha Kardex do Produto</string>
+   </property>
+  </action>
+  <action name="actionRel_Fichas_Tecnicas">
+   <property name="text">
+    <string>Fichas Tecnicas</string>
    </property>
   </action>
  </widget>
