@@ -1,0 +1,100 @@
+# -*- coding: utf-8 -*-
+"""Controller da tela de Relatório de Fichas Técnicas.
+
+Responsabilidade: APENAS controle de tela (filtros, botões, diálogo de
+salvamento). Dados via RelatorioFichaTecnicaService; PDF via
+app.reports.relatorio_ficha_tecnica_pdf.
+"""
+from datetime import datetime
+
+from PySide6.QtCore import QDate, QUrl
+from PySide6.QtGui import QDesktopServices
+from PySide6.QtWidgets import QFileDialog, QMessageBox, QWidget
+
+from app.reports.relatorio_ficha_tecnica_pdf import gerar_pdf_ficha_tecnica
+from app.services.relatorio_ficha_tecnica_service import (
+    RelatorioFichaTecnicaService,
+)
+from app.utils.logger import get_logger
+from app.views.ui_relatorio_ficha_tecnica import Ui_Rel_Ficha_Tecnica
+
+logger = get_logger("relatorio_ficha_tecnica")
+
+
+class RelFichaTecnicaController(QWidget):
+    """Tela de emissão do relatório de fichas técnicas (PDF)."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.ui = Ui_Rel_Ficha_Tecnica()
+        self.ui.setupUi(self)
+
+        self._service = RelatorioFichaTecnicaService()
+
+        # padrão: mês corrente (informativo no cabeçalho do PDF)
+        hoje = QDate.currentDate()
+        self.ui.dt_Data_Inicial.setDate(QDate(hoje.year(), hoje.month(), 1))
+        self.ui.dt_Data_Final.setDate(hoje)
+
+        self.ui.bt_Pesquisar_Fichas_Tecnicas.clicked.connect(
+            self._pesquisar_ficha)
+        self.ui.bt_Filtrar.clicked.connect(self._gerar_relatorio)
+
+    # ---------------- filtros ----------------
+
+    def _pesquisar_ficha(self):
+        """Abre a pesquisa de fichas e copia a descrição do produto acabado."""
+        from app.controllers.pesquisa_ficha_tecnica_controller import (
+            PesquisaFichaTecnicaController,
+        )
+        dialogo = PesquisaFichaTecnicaController(self)
+        if dialogo.exec():
+            ficha = dialogo.ficha_selecionada()   # método, com parênteses
+            if ficha:
+                descricao = self._service.descricao_da_ficha(ficha.id)
+                self.ui.txt_Fichas_Tecnicas.setText(descricao or
+                                                    ficha.codigo_produto)
+
+    # ---------------- geração ----------------
+
+    def _gerar_relatorio(self):
+        filtro = self.ui.txt_Fichas_Tecnicas.text().strip()
+        try:
+            fichas = self._service.fichas_tecnicas(filtro)
+        except Exception as exc:
+            QMessageBox.critical(self, "Relatório", self._mensagem_erro(exc))
+            return
+
+        if not fichas:
+            QMessageBox.information(
+                self, "Relatório", "Nenhuma ficha técnica encontrada.")
+            return
+
+        periodo = (
+            f"Período: {self.ui.dt_Data_Inicial.date().toString('dd/MM/yyyy')}"
+            f" a {self.ui.dt_Data_Final.date().toString('dd/MM/yyyy')}"
+        )
+        sugerido = f"Relatorio_Fichas_Tecnicas_{datetime.now():%Y-%m-%d}.pdf"
+        caminho, _ = QFileDialog.getSaveFileName(
+            self, "Salvar relatório", sugerido, "PDF (*.pdf)")
+        if not caminho:
+            return
+
+        try:
+            gerar_pdf_ficha_tecnica(fichas, caminho, periodo=periodo)
+        except Exception as exc:
+            QMessageBox.critical(self, "Relatório", self._mensagem_erro(exc))
+            return
+
+        logger.info("Relatório gerado: %s (%s fichas)", caminho, len(fichas))
+        QMessageBox.information(
+            self, "Relatório", f"PDF gerado com sucesso:\n{caminho}")
+        QDesktopServices.openUrl(QUrl.fromLocalFile(caminho))
+
+    # ---------------- mensagens ----------------
+
+    def _mensagem_erro(self, exc: Exception) -> str:
+        nome = type(exc).__name__
+        if nome == "OperationalError":
+            return "Falha de conexão com o banco de dados."
+        return f"Erro ao gerar o relatório: {exc}"

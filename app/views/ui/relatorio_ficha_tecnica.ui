@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>426</width>
+    <width>410</width>
     <height>136</height>
    </rect>
   </property>
@@ -107,13 +107,13 @@
           <widget class="QDateEdit" name="dt_Data_Inicial">
            <property name="minimumSize">
             <size>
-             <width>0</width>
+             <width>120</width>
              <height>30</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>16777215</width>
+             <width>120</width>
              <height>30</height>
             </size>
            </property>
@@ -145,13 +145,13 @@
           <widget class="QDateEdit" name="dt_Data_Final">
            <property name="minimumSize">
             <size>
-             <width>0</width>
+             <width>120</width>
              <height>30</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>16777215</width>
+             <width>120</width>
              <height>30</height>
             </size>
            </property>

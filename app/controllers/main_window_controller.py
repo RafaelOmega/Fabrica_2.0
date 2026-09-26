@@ -8,6 +8,11 @@ from app.controllers.cad_produtos_controller import CadProdutosController
 from app.controllers.cad_motivo_entrada_controller import CadMotivoEntradaController
 from app.controllers.cad_ficha_tecnica_controller import CadFichaTecnicaController
 from app.controllers.entrada_controller import EntradaController
+
+from app.controllers.relatorio_ficha_tecnica_controller import (
+    RelFichaTecnicaController,
+)
+
 from app.utils.logger import get_logger
 from app.views.ui_main_window import Ui_MainWindow
 
@@ -42,6 +47,9 @@ class MainWindowController(QMainWindow):
             pai)
         self._criadores["entrada"] = lambda pai: EntradaController(pai)
 
+        self._criadores["rel_fichas_tecnicas"] = (
+            lambda pai: RelFichaTecnicaController(pai))
+
         logger.info("Janela principal iniciada")
 
     # ---------------- configuração ----------------
@@ -65,6 +73,8 @@ class MainWindowController(QMainWindow):
             "saida":          (self.ui.actionSaida, "Saída"),
             "estoque":        (self.ui.actionEstoque, "Estoque"),
             "ficha_kardex":   (self.ui.actionFichaKardexProduto, "Ficha Kardex do Produto"),
+            "rel_fichas_tecnicas": (
+                self.ui.actionRel_Fichas_Tecnicas, "Relatório de Fichas Técnicas"),
         }
         for chave, (acao, _titulo) in self._telas.items():
             acao.triggered.connect(

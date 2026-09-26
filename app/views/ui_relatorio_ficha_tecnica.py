@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'relatorio_ficha_tecnicaVEjiab.ui'
+## Form generated from reading UI file 'relatorio_ficha_tecnicaNtBorU.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -23,7 +23,7 @@ class Ui_Rel_Ficha_Tecnica(object):
     def setupUi(self, Rel_Ficha_Tecnica):
         if not Rel_Ficha_Tecnica.objectName():
             Rel_Ficha_Tecnica.setObjectName(u"Rel_Ficha_Tecnica")
-        Rel_Ficha_Tecnica.resize(426, 136)
+        Rel_Ficha_Tecnica.resize(410, 136)
         font = QFont()
         font.setFamilies([u"Segoe UI Semibold"])
         font.setPointSize(10)
@@ -58,8 +58,8 @@ class Ui_Rel_Ficha_Tecnica(object):
 
         self.dt_Data_Inicial = QDateEdit(self.frm_Filtro)
         self.dt_Data_Inicial.setObjectName(u"dt_Data_Inicial")
-        self.dt_Data_Inicial.setMinimumSize(QSize(0, 30))
-        self.dt_Data_Inicial.setMaximumSize(QSize(16777215, 30))
+        self.dt_Data_Inicial.setMinimumSize(QSize(120, 30))
+        self.dt_Data_Inicial.setMaximumSize(QSize(120, 30))
         self.dt_Data_Inicial.setCalendarPopup(True)
 
         self.horizontalLayout_5.addWidget(self.dt_Data_Inicial)
@@ -73,8 +73,8 @@ class Ui_Rel_Ficha_Tecnica(object):
 
         self.dt_Data_Final = QDateEdit(self.frm_Filtro)
         self.dt_Data_Final.setObjectName(u"dt_Data_Final")
-        self.dt_Data_Final.setMinimumSize(QSize(0, 30))
-        self.dt_Data_Final.setMaximumSize(QSize(16777215, 30))
+        self.dt_Data_Final.setMinimumSize(QSize(120, 30))
+        self.dt_Data_Final.setMaximumSize(QSize(120, 30))
         self.dt_Data_Final.setCalendarPopup(True)
 
         self.horizontalLayout_5.addWidget(self.dt_Data_Final)
