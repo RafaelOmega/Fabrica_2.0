@@ -8,7 +8,15 @@ class InsumoRelatorio:
     codigo_produto: str = ""
     descricao: str = ""
     quantidade_kg: float = 0.0
-    custo_unitario: float | None = None
+    custo_saco: float | None = None  # custo cadastrado do produto
+    peso_saco: float = 0.0           # peso do produto (cadastro)
+
+    @property
+    def custo_kg(self) -> float | None:
+        """Custo por kg do insumo (custo cadastrado / peso do produto)."""
+        if self.custo_saco is None or self.peso_saco <= 0:
+            return None
+        return self.custo_saco / self.peso_saco
 
 
 @dataclass
@@ -28,6 +36,6 @@ class FichaTecnicaRelatorio:
         """
         total = 0.0
         for item in self.itens:
-            if item.custo_unitario is not None:
-                total += item.quantidade_kg * item.custo_unitario
+            if item.custo_kg is not None:
+                total += item.quantidade_kg * item.custo_kg
         return total

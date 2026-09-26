@@ -4,6 +4,7 @@
 Layout:
   - Cabeçalho fixo: título, período do filtro e emissão
   - Uma seção por ficha: identificação + tabela de insumos + custo da batida
+  - Ficha nunca quebrada no meio: cada seção entra inteira na página
   - Rodapé fixo: sistema à esquerda, "Página X de Y" à direita
 """
 from datetime import datetime
@@ -12,8 +13,9 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
-from reportlab.platypus import (BaseDocTemplate, Frame, PageTemplate,
-                                Paragraph, Spacer, Table, TableStyle)
+from reportlab.platypus import (BaseDocTemplate, Frame, KeepTogether,
+                                PageTemplate, Paragraph, Spacer, Table,
+                                TableStyle)
 from reportlab.pdfgen import canvas as pdfcanvas
 
 from app.models.relatorio_ficha_tecnica import FichaTecnicaRelatorio
@@ -122,27 +124,31 @@ def _secao_ficha(ficha: FichaTecnicaRelatorio) -> list:
         f"Sacos por batida: <b>{_numero_limpo(ficha.sacos_batida)}</b>",
         ParagraphStyle("info", parent=_ESTILO_CELULA, textColor=CINZA_TXT))
 
-    dados = [["Código", "Insumo", "Qtde (kg)", "Custo/kg"]]
+    dados = [["Código", "Insumos", "Qtde (kg)", "Custo/Saco", "Custo/kg"]]
     for item in ficha.itens:
         dados.append([
             item.codigo_produto,
             Paragraph(item.descricao, _ESTILO_CELULA),
             _numero(item.quantidade_kg, 4),
-            _moeda(item.custo_unitario) if item.custo_unitario is not None
-            else "—",
+            # Custo/Saco: apenas informativo (custo cadastrado do produto)
+            _moeda(item.custo_saco) if item.custo_saco is not None else "—",
+            # Custo/kg: custo do saco / kg do saco
+            _moeda(item.custo_kg) if item.custo_kg is not None else "—",
         ])
     if len(dados) == 1:
-        dados.append(["—", "sem insumos cadastrados", "—", "—"])
+        dados.append(["—", "sem insumos cadastrados", "—", "—", "—"])
     dados.append([
         "",
         Paragraph("<b>Custo da batida</b>", _ESTILO_TOTAL),
+        "",
         "",
         Paragraph(f"<b>{_moeda(ficha.custo_batida)}</b>", _ESTILO_TOTAL),
     ])
 
     tabela = Table(
         dados,
-        colWidths=[2.2 * cm, _LARGURA - 8.0 * cm, 3.2 * cm, 2.6 * cm],
+        colWidths=[2.2 * cm, _LARGURA - 9.4 * cm, 2.8 * cm, 2.2 * cm,
+                   2.2 * cm],
         repeatRows=1,
     )
     tabela.setStyle(TableStyle([
@@ -158,6 +164,7 @@ def _secao_ficha(ficha: FichaTecnicaRelatorio) -> list:
         ("SPAN", (0, -1), (1, -1)),
         ("ALIGN", (2, 0), (2, -1), "RIGHT"),
         ("ALIGN", (3, 0), (3, -1), "RIGHT"),
+        ("ALIGN", (4, 0), (4, -1), "RIGHT"),
         ("TOPPADDING", (0, 0), (-1, -1), 4),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]))
@@ -195,7 +202,9 @@ def gerar_pdf_ficha_tecnica(fichas: list[FichaTecnicaRelatorio],
     for indice, ficha in enumerate(fichas):
         if indice:
             story.append(Spacer(1, 0.7 * cm))
-        story.extend(_secao_ficha(ficha))
+        # KeepTogether: a ficha vai inteira para a próxima página se
+        # não couber na atual (só quebra se for maior que a página).
+        story.append(KeepTogether(_secao_ficha(ficha)))
 
     doc.build(story, canvasmaker=_CanvasPaginado)
     logger.info("PDF gerado: %s", caminho)

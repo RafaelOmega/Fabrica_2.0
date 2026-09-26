@@ -15,7 +15,7 @@ class RelatorioFichaTecnicaRepository:
         self._conn = conn or get_connection()
 
     def fichas_tecnicas(self, filtro: str = "") -> list[FichaTecnicaRelatorio]:
-        """Fichas + insumos (descrição e custo vindos do cadastro de produtos).
+        """Fichas + insumos (descrição, peso e custo do cadastro de produtos).
 
         Filtro vazio retorna todas as fichas; quando preenchido, busca
         por descrição do produto acabado, código ou ID da ficha.
@@ -71,7 +71,7 @@ class RelatorioFichaTecnicaRepository:
         cur.execute(
             """
             SELECT i.codigo_produto, p.descricao,
-                   i.quantidade_kg, p.custo
+                   i.quantidade_kg, p.custo, p.peso
               FROM itens_ficha_tecnica i
               LEFT JOIN produtos p ON p.id = i.produto_id
              WHERE i.ficha_id = %s
@@ -83,7 +83,8 @@ class RelatorioFichaTecnicaRepository:
             InsumoRelatorio(
                 codigo_produto=l[0], descricao=l[1] or "",
                 quantidade_kg=float(l[2]),
-                custo_unitario=float(l[3]) if l[3] is not None else None,
+                custo_saco=float(l[3]) if l[3] is not None else None,
+                peso_saco=float(l[4]) if l[4] is not None else 0.0,
             )
             for l in cur.fetchall()
         ]
