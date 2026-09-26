@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'relatorio_ficha_tecnicalHJQch.ui'
+## Form generated from reading UI file 'relatorio_ficha_tecnicayGbaBE.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -24,6 +24,8 @@ class Ui_Rel_Ficha_Tecnica(object):
         if not Rel_Ficha_Tecnica.objectName():
             Rel_Ficha_Tecnica.setObjectName(u"Rel_Ficha_Tecnica")
         Rel_Ficha_Tecnica.resize(460, 92)
+        Rel_Ficha_Tecnica.setMinimumSize(QSize(460, 92))
+        Rel_Ficha_Tecnica.setMaximumSize(QSize(460, 92))
         font = QFont()
         font.setFamilies([u"Segoe UI Semibold"])
         font.setPointSize(10)

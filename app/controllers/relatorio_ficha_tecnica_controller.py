@@ -5,7 +5,6 @@ Responsabilidade: APENAS controle de tela (filtros, botões).
 Ao filtrar, abre a pré-visualização (mesmo layout do PDF), de onde
 o usuário gera PDF, XLSX ou CSV. Dados via RelatorioFichaTecnicaService.
 """
-from PySide6.QtCore import QDate
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 from app.services.relatorio_ficha_tecnica_service import (
@@ -26,11 +25,6 @@ class RelFichaTecnicaController(QWidget):
         self.ui.setupUi(self)
 
         self._service = RelatorioFichaTecnicaService()
-
-        # padrão: mês corrente (informativo no cabeçalho do PDF)
-        hoje = QDate.currentDate()
-        self.ui.dt_Data_Inicial.setDate(QDate(hoje.year(), hoje.month(), 1))
-        self.ui.dt_Data_Final.setDate(hoje)
 
         self.ui.bt_Pesquisar_Fichas_Tecnicas.clicked.connect(
             self._pesquisar_ficha)
@@ -66,16 +60,12 @@ class RelFichaTecnicaController(QWidget):
                 self, "Relatório", "Nenhuma ficha técnica encontrada.")
             return
 
-        periodo = (
-            f"Período: {self.ui.dt_Data_Inicial.date().toString('dd/MM/yyyy')}"
-            f" a {self.ui.dt_Data_Final.date().toString('dd/MM/yyyy')}"
-        )
-
         # pré-visualização: mesmo layout do PDF, com PDF/XLSX/CSV
+        # (fichas não têm data — nenhum período é informado)
         from app.controllers.relatorio_ficha_tecnica_preview_controller import (
             RelFichaTecnicaPreviewController,
         )
-        dialogo = RelFichaTecnicaPreviewController(fichas, periodo, self)
+        dialogo = RelFichaTecnicaPreviewController(fichas, "", self)
         dialogo.exec()
 
     # ---------------- mensagens ----------------

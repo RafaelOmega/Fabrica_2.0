@@ -3,6 +3,9 @@
 
 Mostra os dados no mesmo layout do PDF e permite gerar PDF, XLSX ou CSV.
 Aberta pelo botão Filtrar da tela de relatório (a tela de filtros não muda).
+
+O QTextBrowser usa folha de estilo própria (fundo branco, "papel"),
+pois o tema escuro global do sistema torna o HTML claro ilegível.
 """
 from datetime import datetime
 
@@ -20,6 +23,16 @@ AZUL = "#1F3B5B"
 ZEBRA = "#F2F5F8"
 LINHA = "#C9D3DE"
 CINZA = "#5A6B7B"
+TEXTO = "#222222"
+
+# "Papel" do preview: fundo branco fixo, independente do tema escuro global
+_ESTILO_PAPEL = f"""
+QTextBrowser {{
+    background-color: #FFFFFF;
+    color: {TEXTO};
+    border: 1px solid {LINHA};
+}}
+"""
 
 
 class RelFichaTecnicaPreviewController(QDialog):
@@ -35,6 +48,7 @@ class RelFichaTecnicaPreviewController(QDialog):
         self.resize(860, 600)
 
         self.txt_Visualizacao = QTextBrowser(self)
+        self.txt_Visualizacao.setStyleSheet(_ESTILO_PAPEL)
 
         self.bt_PDF = QPushButton("Gerar PDF", self)
         self.bt_XLSX = QPushButton("Gerar XLSX", self)
@@ -84,12 +98,12 @@ class RelFichaTecnicaPreviewController(QDialog):
 
         html = [
             "<table width='100%' cellspacing='0' cellpadding='0'>"
-            f"<tr><td style='background-color:{AZUL};color:white;"
+            f"<tr><td style='background-color:{AZUL};color:#FFFFFF;"
             "padding:6px 8px;font-size:10pt;'>" + titulo + "</td></tr></table>",
             f"<p style='color:{CINZA};'>Sacos por batida: "
             f"<b>{_numero_limpo(ficha.sacos_batida)}</b></p>",
             "<table width='100%' cellspacing='0' cellpadding='4' "
-            f"style='border:1px solid {LINHA};font-size:9pt;'>",
+            f"style='border:1px solid {LINHA};font-size:9pt;color:{TEXTO};'>",
             f"<tr style='background-color:{ZEBRA};color:{AZUL};'>"
             "<th align='left'>Código</th><th align='left'>Insumos</th>"
             "<th align='right'>Qtde (kg)</th>"
@@ -113,7 +127,8 @@ class RelFichaTecnicaPreviewController(QDialog):
             html.append("<tr><td>—</td><td>sem insumos cadastrados</td>"
                         "<td>—</td><td>—</td><td>—</td></tr>")
         html.append(
-            "<tr style='background-color:#E8EDF2;font-weight:bold;'>"
+            "<tr style='background-color:#E8EDF2;font-weight:bold;"
+            f"color:{TEXTO};'>"
             "<td colspan='2'>Custo da batida</td><td></td><td></td>"
             f"<td align='right'>{_moeda(ficha.custo_batida)}</td></tr>"
             "</table><br>")

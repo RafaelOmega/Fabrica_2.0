@@ -10,6 +10,18 @@
     <height>92</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>460</width>
+    <height>92</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>460</width>
+    <height>92</height>
+   </size>
+  </property>
   <property name="font">
    <font>
     <family>Segoe UI Semibold</family>

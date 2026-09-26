@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'pesquisa_ficha_tecnicaJwyhKH.ui'
+## Form generated from reading UI file 'pesquisa_ficha_tecnicaysfBuE.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -23,7 +23,7 @@ class Ui_Pesquisa_Fichas_Tecnicas(object):
     def setupUi(self, Pesquisa_Fichas_Tecnicas):
         if not Pesquisa_Fichas_Tecnicas.objectName():
             Pesquisa_Fichas_Tecnicas.setObjectName(u"Pesquisa_Fichas_Tecnicas")
-        Pesquisa_Fichas_Tecnicas.resize(578, 427)
+        Pesquisa_Fichas_Tecnicas.resize(788, 427)
         font = QFont()
         font.setFamilies([u"Segoe UI Semibold"])
         font.setPointSize(10)
