@@ -390,6 +390,7 @@ class EntradaController(QWidget):
         self._produto_selecionado = produto
         self.ui.txt_Cod_Prod.setText(produto.codigo)
         self.ui.txt_Descricao_Prod.setText(produto.descricao)
+        self.ui.txt_Custo.setText(f"{produto.custo:.2f}".replace(".", ","))
         self.ui.txt_Qtde.setFocus()
 
     def _adicionar_item(self):
