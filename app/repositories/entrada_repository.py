@@ -65,13 +65,40 @@ class EntradaRepository:
     def excluir(self, entrada_id: int) -> bool:
         with self._conn:
             with self._conn.cursor() as cur:
+                # desfaz alterações de custo geradas por esta entrada
+                cur.execute(
+                    "SELECT produto_id, custo_anterior, custo_novo "
+                    "FROM alteracoes_custo WHERE entrada_id = %s",
+                    (entrada_id,),
+                )
+                for produto_id, custo_anterior, custo_novo in cur.fetchall():
+                    cur.execute(
+                        "SELECT custo FROM produtos WHERE id = %s",
+                        (produto_id,),
+                    )
+                    linha = cur.fetchone()
+                    if linha is None:
+                        continue
+                    custo_atual = float(linha[0])
+                    # só reverte se nenhuma alteração posterior sobrescreveu
+                    if not custo_diverge(custo_atual, float(custo_novo)):
+                        cur.execute(
+                            "UPDATE produtos SET custo = %s WHERE id = %s",
+                            (custo_anterior, produto_id),
+                        )
+                # remove os registros de auditoria da entrada excluída
+                cur.execute(
+                    "DELETE FROM alteracoes_custo WHERE entrada_id = %s",
+                    (entrada_id,),
+                )
                 cur.execute(
                     "DELETE FROM itens_entrada WHERE entrada_id = %s",
                     (entrada_id,),
                 )
                 cur.execute(
                     "DELETE FROM entradas WHERE id = %s", (entrada_id,))
-        logger.info("Entrada excluída: id=%s", entrada_id)
+        logger.info("Entrada excluída: id=%s (custos revertidos quando aplicável)",
+                    entrada_id)
         return True
 
     @staticmethod
