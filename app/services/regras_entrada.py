@@ -9,6 +9,8 @@ apenas consulte e aplique o resultado na tela.
 CODIGO_MILHO = "116431"
 DIVISOR_MILHO = 60.0
 
+TOLERANCIA_CUSTO = 0.00001
+
 
 def tem_regra_especial(codigo: str) -> bool:
     """Indica se o produto tem regra especial de entrada."""
@@ -27,3 +29,8 @@ def calcular_custo(codigo: str,
     if valor_milho is None or valor_milho <= 0:
         return None
     return valor_milho / DIVISOR_MILHO
+
+
+def custo_diverge(custo_cadastrado: float, custo_item: float) -> bool:
+    """Indica se o custo do item difere do custo cadastrado do produto."""
+    return abs(custo_cadastrado - custo_item) > TOLERANCIA_CUSTO
