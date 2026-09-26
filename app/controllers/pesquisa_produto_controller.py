@@ -115,17 +115,14 @@ class PesquisaProdutoController(QDialog):
             return None
         linha = indice.row()
 
-        def col(c):
-            item = self._modelo.item(linha, c)
-            return item.text() if item else ""
+        item = self._modelo.item(linha, 0)
+        if item is None or self._service is None:
+            return None
 
-        return Produto(
-            codigo=col(0),
-            descricao=col(1),
-            mat_prima=col(2) == "Sim",
-            prod_acabado=col(3) == "Sim",
-            mao_obra=col(4) == "Sim",
-            peso=float(col(5) or 0),
-            custo=float(col(6) or 0),
-            controla_estoque=col(7) == "Sim",
-        )
+        try:
+            return self._service.buscar_por_codigo(item.text())
+        except Exception as exc:
+            logger.exception("Falha ao carregar produto selecionado")
+            QMessageBox.critical(
+                self, "Erro", f"Falha ao carregar o produto:\n{exc}")
+            return None
