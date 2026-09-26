@@ -11,6 +11,8 @@ from app.database import get_connection
 from app.models.entrada import Entrada, ItemEntrada
 from app.utils.logger import get_logger
 
+from app.services.regras_entrada import custo_diverge
+
 logger = get_logger("entrada_repository")
 
 _COLUNAS = "sequencia, data_entrada, motivo_entrada_id"
@@ -80,6 +82,29 @@ class EntradaRepository:
                 "VALUES (%s, %s, %s, %s)",
                 (entrada.id, item.produto_id, item.quantidade, item.custo),
             )
+            if item.produto_id is None:
+                continue
+            # regra: custo divergente -> atualiza cadastro e registra
+            cur.execute(
+                "SELECT custo FROM produtos WHERE id = %s",
+                (item.produto_id,),
+            )
+            linha = cur.fetchone()
+            if linha is None:
+                continue
+            custo_cadastrado = float(linha[0])
+            if custo_diverge(custo_cadastrado, item.custo):
+                cur.execute(
+                    "UPDATE produtos SET custo = %s WHERE id = %s",
+                    (item.custo, item.produto_id),
+                )
+                cur.execute(
+                    "INSERT INTO alteracoes_custo "
+                    "(produto_id, custo_anterior, custo_novo, "
+                    "origem, entrada_id) VALUES (%s, %s, %s, 'entrada', %s)",
+                    (item.produto_id, custo_cadastrado, item.custo,
+                     entrada.id),
+                )
 
     # ---------------- leitura ----------------
 
