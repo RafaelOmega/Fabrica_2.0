@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass, field
 class ItemEntrada:
     produto_id: int | None = None
     codigo_produto: str = ""  # apenas exibição (vem do JOIN com produtos)
+    descricao_produto: str = ""  # apenas exibição (vem do JOIN com produtos)
     quantidade: float = 0.0
     custo: float = 0.0
     entrada_id: int | None = None
@@ -21,6 +22,7 @@ class ItemEntrada:
         return cls(
             produto_id=dados.get("produto_id"),
             codigo_produto=str(dados.get("codigo_produto", "")),
+            descricao_produto=str(dados.get("descricao_produto", "")),
             quantidade=float(dados.get("quantidade", 0.0) or 0.0),
             custo=float(dados.get("custo", 0.0) or 0.0),
             entrada_id=dados.get("entrada_id"),

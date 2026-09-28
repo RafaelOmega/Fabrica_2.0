@@ -240,7 +240,7 @@ class EntradaRepository:
     def _buscar_itens(cur, entrada_id: int) -> list[ItemEntrada]:
         cur.execute(
             "SELECT ie.id, ie.entrada_id, ie.produto_id, p.codigo, "
-            "ie.quantidade, ie.custo "
+            "p.descricao, ie.quantidade, ie.custo "
             "FROM itens_entrada ie "
             "LEFT JOIN produtos p ON p.id = ie.produto_id "
             "WHERE ie.entrada_id = %s ORDER BY ie.id",
@@ -249,8 +249,9 @@ class EntradaRepository:
         return [
             ItemEntrada(
                 id=l[0], entrada_id=l[1], produto_id=l[2],
-                codigo_produto=l[3] or "", quantidade=float(l[4]),
-                custo=float(l[5]),
+                codigo_produto=l[3] or "",
+                descricao_produto=l[4] or "",
+                quantidade=float(l[5]), custo=float(l[6]),
             )
             for l in cur.fetchall()
         ]

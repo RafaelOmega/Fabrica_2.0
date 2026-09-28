@@ -495,11 +495,13 @@ class EntradaController(QWidget):
             if item.codigo_produto == produto.codigo:
                 item.quantidade = qtde
                 item.custo = custo
+                item.descricao_produto = produto.descricao
                 break
         else:
             self._itens.append(ItemEntrada(
                 produto_id=produto.id,
                 codigo_produto=produto.codigo,
+                descricao_produto=produto.descricao,
                 quantidade=qtde,
                 custo=custo,
             ))
@@ -547,25 +549,13 @@ class EntradaController(QWidget):
             total += item.total
             self._modelo.appendRow([
                 QStandardItem(item.codigo_produto),
-                QStandardItem(self._descricao_de(item.codigo_produto)),
+                QStandardItem(item.descricao_produto),
                 QStandardItem(f"{item.quantidade:.4f}"),
                 QStandardItem(_moeda(item.custo)),
                 QStandardItem(_moeda(item.total)),
             ])
         self.ui.txt_Total_Itens.setText(_moeda(total))
         ajustar_larguras(self.ui.tb_Itens, coluna_stretch=1)
-
-    def _produto_de(self, codigo: str):
-        if self._service_produto is None:
-            return None
-        try:
-            return self._service_produto.buscar_por_codigo(codigo)
-        except Exception:
-            return None
-
-    def _descricao_de(self, codigo: str) -> str:
-        produto = self._produto_de(codigo)
-        return produto.descricao if produto else ""
 
     # ---------------- salvar / excluir ----------------
 
