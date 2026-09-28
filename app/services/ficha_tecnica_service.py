@@ -26,3 +26,6 @@ class FichaTecnicaService:
 
     def pesquisar(self, filtro: str = "") -> list[FichaTecnica]:
         return self._repo.pesquisar(filtro)
+
+    def buscar_por_produto(self, produto_id: int) -> FichaTecnica | None:
+        return self._repo.buscar_por_produto(produto_id)
