@@ -60,7 +60,7 @@
       <item alignment="Qt::AlignmentFlag::AlignHCenter">
        <widget class="QLabel" name="lb_Carregamento">
         <property name="text">
-         <string>Carregando....</string>
+         <string>Abrindo Controle de Fabrica</string>
         </property>
        </widget>
       </item>
