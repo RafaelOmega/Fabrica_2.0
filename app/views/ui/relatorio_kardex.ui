@@ -30,7 +30,7 @@
    </font>
   </property>
   <property name="windowTitle">
-   <string>Relatório de Kadex do Produto</string>
+   <string>Relatório de Kardex do Produto</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <property name="spacing">

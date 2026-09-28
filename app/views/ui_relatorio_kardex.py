@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'relatorio_kardexctnCvy.ui'
+## Form generated from reading UI file 'relatorio_kardexMSvuAa.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -148,7 +148,7 @@ class Ui_Rel_Kardex(object):
     # setupUi
 
     def retranslateUi(self, Rel_Kardex):
-        Rel_Kardex.setWindowTitle(QCoreApplication.translate("Rel_Kardex", u"Relat\u00f3rio de Kadex do Produto", None))
+        Rel_Kardex.setWindowTitle(QCoreApplication.translate("Rel_Kardex", u"Relat\u00f3rio de Kardex do Produto", None))
         self.lb_Data_Inicial.setText(QCoreApplication.translate("Rel_Kardex", u"Data Inicial:", None))
         self.lb_Data_Final.setText(QCoreApplication.translate("Rel_Kardex", u"Data Final:", None))
         self.lb_Produto.setText(QCoreApplication.translate("Rel_Kardex", u"Produto:", None))
