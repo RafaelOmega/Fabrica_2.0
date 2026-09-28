@@ -344,6 +344,11 @@ class EntradaController(QWidget):
                 return motivo
         return None
 
+    def _motivo_texto(self) -> str:
+        """Texto do motivo selecionado (para regras por descrição)."""
+        motivo = self._motivo_atual()
+        return motivo.descricao if motivo else ""
+
     def _ao_mudar_motivo(self):
         """Hook para o acionamento da produção.
 
@@ -354,6 +359,10 @@ class EntradaController(QWidget):
         if motivo and motivo.baixa_producao:
             logger.info("Motivo de produção selecionado: %s", motivo.codigo)
             # TODO: acionamento da produção
+
+        # a regra do milho depende do motivo: reavalia os campos visíveis
+        if self._produto_selecionado is not None:
+            self._aplicar_insumo(self._produto_selecionado)
 
     # ---------------- insumo / itens ----------------
 
@@ -397,7 +406,7 @@ class EntradaController(QWidget):
         self.ui.txt_Cod_Prod.setText(produto.codigo)
         self.ui.txt_Descricao_Prod.setText(produto.descricao)
 
-        if tem_regra_especial(produto.codigo):
+        if tem_regra_especial(produto.codigo, self._motivo_texto()):
             # produto com regra especial: campos visíveis, custo calculado
             self.ui.lb_Milho.setVisible(True)
             self.ui.txt_Milho.setVisible(True)
@@ -415,14 +424,15 @@ class EntradaController(QWidget):
     def _ao_digitar_milho(self):
         """Mostra o custo calculado enquanto digita o valor da sacaria."""
         produto = self._produto_selecionado
-        if produto is None or not tem_regra_especial(produto.codigo):
+        if produto is None or not tem_regra_especial(
+                produto.codigo, self._motivo_texto()):
             return
         try:
             valor = float(self.ui.txt_Milho.text().strip().replace(",", "."))
         except ValueError:
             self.ui.txt_Custo.clear()
             return
-        custo = calcular_custo(produto.codigo, valor)
+        custo = calcular_custo(produto.codigo, valor, self._motivo_texto())
         if custo is None:
             self.ui.txt_Custo.clear()
             return
@@ -451,14 +461,15 @@ class EntradaController(QWidget):
             self.ui.txt_Qtde.setFocus()
             return
 
-        if tem_regra_especial(produto.codigo):
+        if tem_regra_especial(produto.codigo, self._motivo_texto()):
             # custo vem da regra especial (valor da sacaria / 60)
             try:
                 valor = float(
                     self.ui.txt_Milho.text().strip().replace(",", "."))
             except ValueError:
                 valor = 0.0
-            custo = calcular_custo(produto.codigo, valor)
+            custo = calcular_custo(
+                produto.codigo, valor, self._motivo_texto())
             if custo is None:
                 QMessageBox.warning(
                     self, "Atenção", "Informe o valor do Milho 60KG.")
@@ -645,6 +656,9 @@ class EntradaController(QWidget):
     # ---------------- campos ----------------
 
     def _limpar_campos(self):
+        # limpa a seleção antes de resetar o combo: evita que o
+        # _ao_mudar_motivo reavalie a regra do milho durante a limpeza
+        self._produto_selecionado = None
         self.ui.txt_Sequencia.clear()
         self.ui.dt_Entrada.setDate(QDate.currentDate())
         self.ui.cmb_Motivo.setCurrentIndex(0)
@@ -657,7 +671,6 @@ class EntradaController(QWidget):
         self.ui.txt_Milho.setVisible(False)
         self.ui.txt_Milho.clear()
         self._itens.clear()
-        self._produto_selecionado = None
         self._entrada_id = None
         self._atualizar_tabela()
         self._modo = MODO_INICIAL
