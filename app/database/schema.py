@@ -6,7 +6,7 @@ CREATE TABLE/INDEX IF NOT EXISTS, portanto em bancos já existentes
 nada é alterado; em banco novo, todas as tabelas são criadas.
 
 A tabela movimentos_kardex recebe um espelho de cada movimento
-(entradas hoje; saídas no futuro) e ainda um backfill idempotente
+(entradas tipo 'E' e saídas tipo 'S') e ainda um backfill idempotente
 das entradas já lançadas antes da tabela existir.
 """
 from app.database.database import get_connection
@@ -95,9 +95,37 @@ _COMANDOS = (
         quantidade     NUMERIC(12,4) NOT NULL DEFAULT 0,
         custo_unitario NUMERIC(12,4),
         entrada_id     INTEGER REFERENCES entradas(id),
-        saida_id       INTEGER,  -- FK quando a tabela de saidas existir
+        saida_id       INTEGER,  -- FK criada abaixo, junto das saídas
         criado_em      TIMESTAMP NOT NULL DEFAULT NOW()
     )
+    """,
+    # ---------------- saidas ----------------
+    """
+    CREATE TABLE IF NOT EXISTS saidas (
+        id         SERIAL PRIMARY KEY,
+        sequencia  INTEGER NOT NULL UNIQUE,
+        data_saida DATE NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS itens_saida (
+        id         SERIAL PRIMARY KEY,
+        saida_id   INTEGER NOT NULL
+                   REFERENCES saidas(id) ON DELETE CASCADE,
+        produto_id INTEGER REFERENCES produtos(id),
+        quantidade NUMERIC(12,4) NOT NULL DEFAULT 0,
+        custo      NUMERIC(12,4) NOT NULL DEFAULT 0
+    )
+    """,
+    """
+    DO $$
+    BEGIN
+        ALTER TABLE movimentos_kardex
+            ADD CONSTRAINT fk_kardex_saida
+            FOREIGN KEY (saida_id) REFERENCES saidas(id);
+    EXCEPTION
+        WHEN duplicate_object THEN NULL;
+    END $$
     """,
     # índices de apoio (pesquisas e kardex)
     """
@@ -119,6 +147,15 @@ _COMANDOS = (
     """
     CREATE INDEX IF NOT EXISTS idx_kardex_entrada
         ON movimentos_kardex (entrada_id)
+    """,
+    # índices de apoio (saídas)
+    """
+    CREATE INDEX IF NOT EXISTS idx_itens_saida_saida
+        ON itens_saida (saida_id)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_kardex_saida
+        ON movimentos_kardex (saida_id)
     """,
 )
 
