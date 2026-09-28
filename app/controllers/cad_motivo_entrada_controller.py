@@ -9,6 +9,7 @@ from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 from app.utils.logger import get_logger
+from app.utils.erros import mensagem_erro
 from app.views.ui_cad_motivo_entrada import Ui_Cad_Motivo_Entrada
 
 try:
@@ -108,12 +109,8 @@ class CadMotivoEntradaController(QWidget):
     # ---------------- mensagens ----------------
 
     def _mensagem_erro(self, exc: Exception) -> str:
-        nome = type(exc).__name__
-        if nome == "UniqueViolation":
-            return "Já existe um motivo com esse código."
-        if nome == "OperationalError":
-            return "Falha de conexão com o banco de dados."
-        return str(exc) or nome
+        return mensagem_erro(
+            exc, duplicidade="Já existe um motivo com esse código.")
 
     # ---------------- acoes de tela ----------------
 

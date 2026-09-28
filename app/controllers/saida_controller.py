@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QMessageBox, QWidget
 from app.models.saida import ItemSaida, Saida
 from app.utils.logger import get_logger
 from app.utils.table_utils import ajustar_larguras, configurar_tabela
+from app.utils.erros import mensagem_erro
 from app.views.ui_saida import Ui_Saida
 
 try:
@@ -196,12 +197,7 @@ class SaidaController(QWidget):
     # ---------------- mensagens ----------------
 
     def _mensagem_erro(self, exc: Exception) -> str:
-        nome = type(exc).__name__
-        if nome == "ForeignKeyViolation":
-            return "Registro relacionado não existe (produto)."
-        if nome == "OperationalError":
-            return "Falha de conexão com o banco de dados."
-        return str(exc) or nome
+        return mensagem_erro(exc, contexto="produto")
 
     # ---------------- fluxo da saída ----------------
 

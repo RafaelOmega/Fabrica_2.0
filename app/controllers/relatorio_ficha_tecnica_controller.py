@@ -11,6 +11,7 @@ from app.services.relatorio_ficha_tecnica_service import (
     RelatorioFichaTecnicaService,
 )
 from app.utils.logger import get_logger
+from app.utils.erros import mensagem_erro
 from app.views.ui_relatorio_ficha_tecnica import Ui_Rel_Ficha_Tecnica
 
 logger = get_logger("relatorio_ficha_tecnica")
@@ -71,7 +72,4 @@ class RelFichaTecnicaController(QWidget):
     # ---------------- mensagens ----------------
 
     def _mensagem_erro(self, exc: Exception) -> str:
-        nome = type(exc).__name__
-        if nome == "OperationalError":
-            return "Falha de conexão com o banco de dados."
-        return f"Erro ao gerar o relatório: {exc}"
+        return mensagem_erro(exc, prefixo="Erro ao gerar o relatório")

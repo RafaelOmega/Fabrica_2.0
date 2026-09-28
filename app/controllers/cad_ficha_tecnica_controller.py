@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QMessageBox, QWidget
 
 from app.models.ficha_tecnica import FichaTecnica, ItemFichaTecnica
 from app.utils.logger import get_logger
+from app.utils.erros import mensagem_erro
 from app.utils.table_utils import ajustar_larguras, configurar_tabela
 from app.views.ui_cad_ficha_tecnica import Ui_Ficha_Tecnica
 
@@ -194,12 +195,8 @@ class CadFichaTecnicaController(QWidget):
     # ---------------- mensagens ----------------
 
     def _mensagem_erro(self, exc: Exception) -> str:
-        nome = type(exc).__name__
-        if nome == "UniqueViolation":
-            return "Já existe uma ficha para este produto."
-        if nome == "OperationalError":
-            return "Falha de conexão com o banco de dados."
-        return str(exc) or nome
+        return mensagem_erro(
+            exc, duplicidade="Já existe uma ficha para este produto.")
 
     # ---------------- fluxo da ficha ----------------
 

@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QMessageBox, QWidget
 
 from app.services.relatorio_kardex_service import RelatorioKardexService
 from app.utils.logger import get_logger
+from app.utils.erros import mensagem_erro
 from app.views.ui_relatorio_kardex import Ui_Rel_Kardex
 
 logger = get_logger("relatorio_kardex")
@@ -89,7 +90,4 @@ class RelKardexController(QWidget):
     # ---------------- mensagens ----------------
 
     def _mensagem_erro(self, exc: Exception) -> str:
-        nome = type(exc).__name__
-        if nome == "OperationalError":
-            return "Falha de conexão com o banco de dados."
-        return f"Erro ao gerar o relatório: {exc}"
+        return mensagem_erro(exc, prefixo="Erro ao gerar o relatório")

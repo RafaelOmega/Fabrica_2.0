@@ -20,6 +20,7 @@ from app.services import regras_producao
 from app.services.regras_entrada import calcular_custo, tem_regra_especial
 from app.utils.logger import get_logger
 from app.utils.table_utils import ajustar_larguras, configurar_tabela
+from app.utils.erros import mensagem_erro
 from app.views.ui_entrada import Ui_Entrada
 
 try:
@@ -238,12 +239,7 @@ class EntradaController(QWidget):
     # ---------------- mensagens ----------------
 
     def _mensagem_erro(self, exc: Exception) -> str:
-        nome = type(exc).__name__
-        if nome == "ForeignKeyViolation":
-            return "Registro relacionado não existe (motivo/produto)."
-        if nome == "OperationalError":
-            return "Falha de conexão com o banco de dados."
-        return str(exc) or nome
+        return mensagem_erro(exc, contexto="motivo/produto")
 
     # ---------------- fluxo da entrada ----------------
 
