@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 from app.controllers.main_window_controller import MainWindowController
 from app.database import get_connection
+from app.database.schema import criar_schema
 from app.utils.logger import get_logger, setup_logging
 from app.utils.theme import aplicar_tema
 from app.utils.icons import aplicar_icone_aplicacao
@@ -46,7 +47,6 @@ def main() -> int:
     app = QApplication(sys.argv)
     app.setApplicationName("Fábrica")
     app.setOrganizationName("Fábrica")
-
     aplicar_tema(app)
     aplicar_icone_aplicacao(app)
 
@@ -62,6 +62,18 @@ def main() -> int:
         if resposta != QMessageBox.StandardButton.Yes:
             logger.info("Aplicação encerrada pelo usuário (sem banco)")
             return 0
+    else:
+        # cria as tabelas que não existirem (idempotente)
+        try:
+            criar_schema()
+        except Exception as exc:
+            logger.error("Falha ao preparar o schema: %s", exc)
+            QMessageBox.critical(
+                None,
+                "Banco de dados",
+                f"Não foi possível preparar as tabelas do banco:\n{exc}",
+            )
+            return 1
 
     janela = MainWindowController()
     janela.showMaximized()
