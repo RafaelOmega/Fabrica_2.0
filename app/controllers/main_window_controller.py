@@ -13,6 +13,9 @@ from app.controllers.relatorio_ficha_tecnica_controller import (
     RelFichaTecnicaController,
 )
 from app.controllers.relatorio_kardex_controller import RelKardexController
+from app.controllers.relatorio_estoque_geral_controller import (
+    RelEstoqueGeralController,
+)
 
 from app.utils.logger import get_logger
 from app.views.ui_main_window import Ui_MainWindow
@@ -51,6 +54,7 @@ class MainWindowController(QMainWindow):
         self._criadores["rel_fichas_tecnicas"] = (
             lambda pai: RelFichaTecnicaController(pai))
         self._criadores["ficha_kardex"] = lambda pai: RelKardexController(pai)
+        self._criadores["estoque"] = lambda pai: RelEstoqueGeralController(pai)
 
         logger.info("Janela principal iniciada")
 
