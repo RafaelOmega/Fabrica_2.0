@@ -4,6 +4,10 @@
 Executada na inicialização do sistema: cada comando usa
 CREATE TABLE/INDEX IF NOT EXISTS, portanto em bancos já existentes
 nada é alterado; em banco novo, todas as tabelas são criadas.
+
+A tabela movimentos_kardex recebe um espelho de cada movimento
+(entradas hoje; saídas no futuro) e ainda um backfill idempotente
+das entradas já lançadas antes da tabela existir.
 """
 from app.database.database import get_connection
 from app.utils.logger import get_logger
@@ -80,6 +84,21 @@ _COMANDOS = (
         data_alteracao TIMESTAMP NOT NULL DEFAULT NOW()
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS movimentos_kardex (
+        id             SERIAL PRIMARY KEY,
+        produto_id     INTEGER NOT NULL REFERENCES produtos(id),
+        data_movimento DATE NOT NULL,
+        tipo           CHAR(1) NOT NULL CHECK (tipo IN ('E', 'S')),
+        documento      VARCHAR(20) NOT NULL DEFAULT '',
+        historico      VARCHAR(120) NOT NULL DEFAULT '',
+        quantidade     NUMERIC(12,4) NOT NULL DEFAULT 0,
+        custo_unitario NUMERIC(12,4),
+        entrada_id     INTEGER REFERENCES entradas(id),
+        saida_id       INTEGER,  -- FK quando a tabela de saidas existir
+        criado_em      TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+    """,
     # índices de apoio (pesquisas e kardex)
     """
     CREATE INDEX IF NOT EXISTS idx_itens_entrada_produto
@@ -93,7 +112,37 @@ _COMANDOS = (
     CREATE INDEX IF NOT EXISTS idx_itens_ficha_ficha
         ON itens_ficha_tecnica (ficha_id)
     """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_kardex_produto_data
+        ON movimentos_kardex (produto_id, data_movimento)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_kardex_entrada
+        ON movimentos_kardex (entrada_id)
+    """,
 )
+
+# Backfill idempotente: espelha entradas lançadas antes da tabela existir.
+# A guarda NOT EXISTS impede duplicação em execuções repetidas.
+_BACKFILL_KARDEX = """
+    INSERT INTO movimentos_kardex
+        (produto_id, data_movimento, tipo, documento, historico,
+         quantidade, custo_unitario, entrada_id)
+    SELECT ie.produto_id, e.data_entrada, 'E',
+           CAST(e.sequencia AS TEXT),
+           COALESCE(m.descricao, ''),
+           ie.quantidade, ie.custo, e.id
+      FROM itens_entrada ie
+      JOIN entradas e ON e.id = ie.entrada_id
+      LEFT JOIN motivos_entrada m ON m.id = e.motivo_entrada_id
+     WHERE ie.produto_id IS NOT NULL
+       AND NOT EXISTS (
+            SELECT 1 FROM movimentos_kardex mk
+             WHERE mk.entrada_id = e.id
+               AND mk.produto_id = ie.produto_id
+               AND mk.quantidade = ie.quantidade
+       )
+"""
 
 
 def criar_schema() -> None:
@@ -104,6 +153,7 @@ def criar_schema() -> None:
             with conn.cursor() as cur:
                 for comando in _COMANDOS:
                     cur.execute(comando)
+                cur.execute(_BACKFILL_KARDEX)
     finally:
         conn.close()
     logger.info("Schema verificado (%s comandos)", len(_COMANDOS))

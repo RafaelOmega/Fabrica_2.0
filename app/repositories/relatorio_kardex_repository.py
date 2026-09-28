@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 """Repositório do relatório de kardex (PostgreSQL).
 
-Fonte atual: entradas (itens_entrada + entradas + motivos_entrada).
-Preparado para saídas: quando a tabela de saídas existir, basta
-acrescentar o UNION ALL indicado em _movimentos — model, service,
-PDF, preview e exportação não mudam (o tipo "S" já é tratado).
+Fonte: tabela movimentos_kardex (espelho dos movimentos).
+Entradas gravam tipo 'E'; a futura tela de Saída gravará tipo 'S'
+com saida_id — nada mais muda neste relatório.
 """
 from datetime import date
 
 from app.database import get_connection
 from app.models.relatorio_kardex import (
-    KardexProduto, MovimentoKardex, TIPO_ENTRADA,
+    KardexProduto, MovimentoKardex, TIPO_ENTRADA, TIPO_SAIDA,
 )
 from app.utils.logger import get_logger
 
@@ -65,9 +64,9 @@ class RelatorioKardexRepository:
                         """
                         SELECT DISTINCT p.id, p.codigo, p.descricao
                           FROM produtos p
-                          JOIN itens_entrada ie ON ie.produto_id = p.id
-                          JOIN entradas e ON e.id = ie.entrada_id
-                         WHERE e.data_entrada BETWEEN %s AND %s
+                          JOIN movimentos_kardex mk
+                            ON mk.produto_id = p.id
+                         WHERE mk.data_movimento BETWEEN %s AND %s
                          ORDER BY p.descricao
                         """,
                         (data_inicial, data_final),
@@ -82,17 +81,15 @@ class RelatorioKardexRepository:
 
     @staticmethod
     def _saldo_inicial(cur, produto_id: int, data_inicial: date) -> float:
-        """Entradas anteriores à data inicial.
-
-        TODO (Saída): subtrair também as saídas anteriores à data inicial.
-        """
+        """Movimentos anteriores à data inicial (entradas - saídas)."""
         cur.execute(
             """
-            SELECT COALESCE(SUM(ie.quantidade), 0)
-              FROM itens_entrada ie
-              JOIN entradas e ON e.id = ie.entrada_id
-             WHERE ie.produto_id = %s
-               AND e.data_entrada < %s
+            SELECT COALESCE(SUM(
+                       CASE WHEN tipo = 'E' THEN quantidade
+                            ELSE -quantidade END), 0)
+              FROM movimentos_kardex
+             WHERE produto_id = %s
+               AND data_movimento < %s
             """,
             (produto_id, data_inicial),
         )
@@ -103,28 +100,24 @@ class RelatorioKardexRepository:
                     data_final: date) -> list[MovimentoKardex]:
         cur.execute(
             """
-            SELECT e.data_entrada, e.sequencia,
-                   COALESCE(m.descricao, ''), ie.quantidade, ie.custo
-              FROM itens_entrada ie
-              JOIN entradas e ON e.id = ie.entrada_id
-              LEFT JOIN motivos_entrada m ON m.id = e.motivo_entrada_id
-             WHERE ie.produto_id = %s
-               AND e.data_entrada BETWEEN %s AND %s
-             ORDER BY e.data_entrada, e.sequencia, ie.id
+            SELECT data_movimento, documento, historico, tipo,
+                   quantidade, custo_unitario
+              FROM movimentos_kardex
+             WHERE produto_id = %s
+               AND data_movimento BETWEEN %s AND %s
+             ORDER BY data_movimento, id
             """,
             (produto_id, data_inicial, data_final),
         )
-        # TODO (Saída): UNION ALL com o mesmo SELECT sobre a tabela de
-        # saídas (tipo "S"), mantendo a ordenação por data/documento.
         return [
             MovimentoKardex(
                 data=l[0].isoformat() if hasattr(l[0], "isoformat")
                 else str(l[0]),
-                documento=str(l[1]),
+                documento=l[1] or "",
                 historico=l[2] or "",
-                tipo=TIPO_ENTRADA,
-                quantidade=float(l[3]),
-                custo_unitario=float(l[4]) if l[4] is not None else None,
+                tipo=TIPO_ENTRADA if l[3] == TIPO_ENTRADA else TIPO_SAIDA,
+                quantidade=float(l[4]),
+                custo_unitario=float(l[5]) if l[5] is not None else None,
             )
             for l in cur.fetchall()
         ]

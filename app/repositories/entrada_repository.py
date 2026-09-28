@@ -2,8 +2,9 @@
 """Repositório de entradas: acesso a dados (PostgreSQL).
 
 Schema:
-  entradas       (id, sequencia, data_entrada, motivo_entrada_id)
-  itens_entrada  (id, entrada_id, produto_id, quantidade, custo)
+  entradas           (id, sequencia, data_entrada, motivo_entrada_id)
+  itens_entrada      (id, entrada_id, produto_id, quantidade, custo)
+  movimentos_kardex  (espelho dos movimentos: entradas hoje, saídas depois)
 """
 from datetime import date
 
@@ -27,7 +28,7 @@ class EntradaRepository:
     # ---------------- escrita ----------------
 
     def salvar(self, entrada: Entrada) -> Entrada:
-        """Grava cabeçalho + itens em transação única. Retorna com id."""
+        """Grava cabeçalho + itens + kardex em transação única."""
         with self._conn:
             with self._conn.cursor() as cur:
                 cur.execute(
@@ -41,6 +42,7 @@ class EntradaRepository:
                 linha = cur.fetchone()
                 entrada.id, entrada.sequencia = linha[0], linha[1]
                 self._inserir_itens(cur, entrada)
+                self._inserir_kardex(cur, entrada)
         logger.info("Entrada inserida: id=%s sequencia=%s (%s itens)",
                     entrada.id, entrada.sequencia, len(entrada.itens))
         return entrada
@@ -59,6 +61,12 @@ class EntradaRepository:
                     (entrada.id,),
                 )
                 self._inserir_itens(cur, entrada)
+                # kardex: regrava o espelho da entrada
+                cur.execute(
+                    "DELETE FROM movimentos_kardex WHERE entrada_id = %s",
+                    (entrada.id,),
+                )
+                self._inserir_kardex(cur, entrada)
         logger.info("Entrada atualizada: id=%s", entrada.id)
         return True
 
@@ -89,6 +97,10 @@ class EntradaRepository:
                 # remove os registros de auditoria da entrada excluída
                 cur.execute(
                     "DELETE FROM alteracoes_custo WHERE entrada_id = %s",
+                    (entrada_id,),
+                )
+                cur.execute(
+                    "DELETE FROM movimentos_kardex WHERE entrada_id = %s",
                     (entrada_id,),
                 )
                 cur.execute(
@@ -132,6 +144,33 @@ class EntradaRepository:
                     (item.produto_id, custo_cadastrado, item.custo,
                      entrada.id),
                 )
+
+    @staticmethod
+    def _inserir_kardex(cur, entrada: Entrada):
+        """Espelha os itens da entrada na tabela movimentos_kardex.
+
+        TODO (Saída): o repository de saídas fará o mesmo com tipo 'S'
+        e saida_id preenchido.
+        """
+        cur.execute(
+            "SELECT descricao FROM motivos_entrada WHERE id = %s",
+            (entrada.motivo_id,),
+        )
+        linha = cur.fetchone()
+        historico = (linha[0] if linha else "") or entrada.motivo_descricao
+        for item in entrada.itens:
+            if item.produto_id is None:
+                continue
+            cur.execute(
+                "INSERT INTO movimentos_kardex "
+                "(produto_id, data_movimento, tipo, documento, historico, "
+                "quantidade, custo_unitario, entrada_id) "
+                "VALUES (%s, %s, 'E', %s, %s, %s, %s, %s)",
+                (item.produto_id,
+                 date.fromisoformat(entrada.data_entrada),
+                 str(entrada.sequencia), historico,
+                 item.quantidade, item.custo, entrada.id),
+            )
 
     # ---------------- leitura ----------------
 
