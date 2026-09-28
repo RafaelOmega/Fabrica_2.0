@@ -5,6 +5,7 @@ import sys
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 
+from app.controllers.carregamento_controller import CarregamentoController
 from app.controllers.main_window_controller import MainWindowController
 from app.database import get_connection
 from app.database.schema import criar_schema
@@ -50,9 +51,15 @@ def main() -> int:
     aplicar_tema(app)
     aplicar_icone_aplicacao(app)
 
+    # splash: aparece antes de qualquer passo bloqueante
+    splash = CarregamentoController()
+    splash.show()
+    splash.atualizar(10, "Abrindo Controle de Fábrica")
+
+    splash.atualizar(30, "Conectando ao banco de dados...")
     if not _validar_conexao():
         resposta = QMessageBox.question(
-            None,
+            splash,
             "Banco de dados",
             "Não foi possível conectar ao banco de dados.\n\n"
             "Deseja continuar mesmo assim?",
@@ -61,13 +68,16 @@ def main() -> int:
         )
         if resposta != QMessageBox.StandardButton.Yes:
             logger.info("Aplicação encerrada pelo usuário (sem banco)")
+            splash.close()
             return 0
     else:
         # cria as tabelas que não existirem (idempotente)
+        splash.atualizar(60, "Preparando as tabelas do banco...")
         try:
             criar_schema()
         except Exception as exc:
             logger.error("Falha ao preparar o schema: %s", exc)
+            splash.close()
             QMessageBox.critical(
                 None,
                 "Banco de dados",
@@ -75,8 +85,12 @@ def main() -> int:
             )
             return 1
 
+    splash.atualizar(85, "Carregando as janelas do sistema...")
     janela = MainWindowController()
+
+    splash.atualizar(100, "Pronto")
     janela.showMaximized()
+    splash.close()
 
     logger.info("Aplicação iniciada")
     return app.exec()
