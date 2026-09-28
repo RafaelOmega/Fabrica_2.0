@@ -4,7 +4,7 @@
 Schema:
   entradas           (id, sequencia, data_entrada, motivo_entrada_id)
   itens_entrada      (id, entrada_id, produto_id, quantidade, custo)
-  movimentos_kardex  (espelho dos movimentos: entradas hoje, saídas depois)
+  movimentos_kardex  (espelho dos movimentos: entradas 'E' e baixas 'S')
 """
 from datetime import date
 
@@ -61,7 +61,7 @@ class EntradaRepository:
                     (entrada.id,),
                 )
                 self._inserir_itens(cur, entrada)
-                # kardex: regrava o espelho da entrada
+                # kardex: regrava o espelho (entradas 'E' e baixas 'S')
                 cur.execute(
                     "DELETE FROM movimentos_kardex WHERE entrada_id = %s",
                     (entrada.id,),
@@ -94,35 +94,34 @@ class EntradaRepository:
                             "UPDATE produtos SET custo = %s WHERE id = %s",
                             (custo_anterior, produto_id),
                         )
+                # remove o espelho no kardex (entradas e baixas de produção)
+                cur.execute(
+                    "DELETE FROM movimentos_kardex WHERE entrada_id = %s",
+                    (entrada_id,),
+                )
                 # remove os registros de auditoria da entrada excluída
                 cur.execute(
                     "DELETE FROM alteracoes_custo WHERE entrada_id = %s",
                     (entrada_id,),
                 )
                 cur.execute(
-                    "DELETE FROM movimentos_kardex WHERE entrada_id = %s",
+                    "DELETE FROM entradas WHERE id = %s",
                     (entrada_id,),
                 )
-                cur.execute(
-                    "DELETE FROM itens_entrada WHERE entrada_id = %s",
-                    (entrada_id,),
-                )
-                cur.execute(
-                    "DELETE FROM entradas WHERE id = %s", (entrada_id,))
-        logger.info("Entrada excluída: id=%s (custos revertidos quando aplicável)",
-                    entrada_id)
+        logger.info("Entrada excluída: id=%s", entrada_id)
         return True
 
-    @staticmethod
-    def _inserir_itens(cur, entrada: Entrada):
+    # ---------------- auxiliares de escrita ----------------
+
+    def _inserir_itens(self, cur, entrada: Entrada):
         for item in entrada.itens:
+            if item.produto_id is None:
+                continue
             cur.execute(
                 f"INSERT INTO itens_entrada ({_COLUNAS_ITEM}) "
                 "VALUES (%s, %s, %s, %s)",
                 (entrada.id, item.produto_id, item.quantidade, item.custo),
             )
-            if item.produto_id is None:
-                continue
             # regra: custo divergente -> atualiza cadastro e registra
             cur.execute(
                 "SELECT custo FROM produtos WHERE id = %s",
@@ -139,18 +138,19 @@ class EntradaRepository:
                 )
                 cur.execute(
                     "INSERT INTO alteracoes_custo "
-                    "(produto_id, custo_anterior, custo_novo, "
-                    "origem, entrada_id) VALUES (%s, %s, %s, 'entrada', %s)",
+                    "(produto_id, custo_anterior, custo_novo, origem, "
+                    "entrada_id) VALUES (%s, %s, %s, 'entrada', %s)",
                     (item.produto_id, custo_cadastrado, item.custo,
                      entrada.id),
                 )
 
-    @staticmethod
-    def _inserir_kardex(cur, entrada: Entrada):
-        """Espelha os itens da entrada na tabela movimentos_kardex.
+    def _inserir_kardex(self, cur, entrada: Entrada):
+        """Espelha os movimentos na tabela movimentos_kardex.
 
-        TODO (Saída): o repository de saídas fará o mesmo com tipo 'S'
-        e saida_id preenchido.
+        Entradas dos itens viram tipo 'E'; as baixas de produção
+        (insumos consumidos pela ficha técnica) viram tipo 'S'
+        vinculadas ao entrada_id — assim atualizar/excluir já as
+        regravam/apagam junto.
         """
         cur.execute(
             "SELECT descricao FROM motivos_entrada WHERE id = %s",
@@ -158,6 +158,8 @@ class EntradaRepository:
         )
         linha = cur.fetchone()
         historico = (linha[0] if linha else "") or entrada.motivo_descricao
+
+        # entradas dos itens (tipo 'E')
         for item in entrada.itens:
             if item.produto_id is None:
                 continue
@@ -170,6 +172,30 @@ class EntradaRepository:
                  date.fromisoformat(entrada.data_entrada),
                  str(entrada.sequencia), historico,
                  item.quantidade, item.custo, entrada.id),
+            )
+
+        # baixa de produção: consome os insumos da ficha técnica (tipo 'S')
+        for baixa in getattr(entrada, "baixas", []):
+            if baixa.produto_id is None:
+                continue
+            cur.execute(
+                "SELECT custo FROM produtos WHERE id = %s",
+                (baixa.produto_id,),
+            )
+            linha_custo = cur.fetchone()
+            custo_insumo = (float(linha_custo[0])
+                            if linha_custo and linha_custo[0] is not None
+                            else 0.0)
+            cur.execute(
+                "INSERT INTO movimentos_kardex "
+                "(produto_id, data_movimento, tipo, documento, historico, "
+                "quantidade, custo_unitario, entrada_id) "
+                "VALUES (%s, %s, 'S', %s, %s, %s, %s, %s)",
+                (baixa.produto_id,
+                 date.fromisoformat(entrada.data_entrada),
+                 str(entrada.sequencia),
+                 f"Baixa produção - {historico}",
+                 baixa.quantidade_kg, custo_insumo, entrada.id),
             )
 
     # ---------------- leitura ----------------
@@ -236,6 +262,26 @@ class EntradaRepository:
                 linhas = cur.fetchall()
         return [e for e in (self._linha_para_entrada(l) for l in linhas) if e]
 
+    # ---------------- auxiliares de leitura ----------------
+
+    @staticmethod
+    def _linha_para_entrada(linha) -> Entrada | None:
+        if not linha:
+            return None
+        entrada = Entrada(
+            id=linha[0],
+            sequencia=linha[1],
+            data_entrada=(linha[2].isoformat()
+                          if hasattr(linha[2], "isoformat")
+                          else str(linha[2] or "")),
+            motivo_id=linha[3],
+            motivo_codigo=linha[4] or "",
+            motivo_descricao=linha[5] or "",
+        )
+        if len(linha) > 6 and linha[6] is not None:
+            entrada.total_sql = float(linha[6])
+        return entrada
+
     @staticmethod
     def _buscar_itens(cur, entrada_id: int) -> list[ItemEntrada]:
         cur.execute(
@@ -255,18 +301,3 @@ class EntradaRepository:
             )
             for l in cur.fetchall()
         ]
-
-    @staticmethod
-    def _linha_para_entrada(linha) -> Entrada | None:
-        if not linha:
-            return None
-        data = linha[2]
-        return Entrada(
-            id=linha[0],
-            sequencia=linha[1],
-            data_entrada=data.isoformat() if isinstance(data, date) else str(data),
-            motivo_id=linha[3],
-            motivo_codigo=linha[4] or "",
-            motivo_descricao=linha[5] or "",
-            total_sql=float(linha[6]) if len(linha) > 6 else 0.0,
-        )

@@ -4,6 +4,7 @@
 Responsabilidade: APENAS controle de tela (botões, campos, navegação).
 Operações de dados são delegadas aos services.
 Regras especiais de produto ficam em app.services.regras_entrada.
+Regras de produção (baixa da ficha técnica) ficam em app.services.regras_producao.
 
 Fluxo (espelhado na Ficha Técnica):
   Inicial -> Novo (cabeçalho) -> [bt_Abrir_Itens] -> Itens
@@ -15,6 +16,7 @@ from PySide6.QtGui import (QKeySequence, QShortcut, QStandardItem,
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 from app.models.entrada import Entrada, ItemEntrada
+from app.services import regras_producao
 from app.services.regras_entrada import calcular_custo, tem_regra_especial
 from app.utils.logger import get_logger
 from app.utils.table_utils import ajustar_larguras, configurar_tabela
@@ -34,6 +36,11 @@ try:
     from app.services.motivo_entrada_service import MotivoEntradaService
 except ImportError:
     MotivoEntradaService = None
+
+try:
+    from app.services.ficha_tecnica_service import FichaTecnicaService
+except ImportError:
+    FichaTecnicaService = None
 
 logger = get_logger("entrada")
 
@@ -73,12 +80,16 @@ class EntradaController(QWidget):
         self._service_produto = ProdutoService() if ProdutoService else None
         self._service_motivo = (
             MotivoEntradaService() if MotivoEntradaService else None)
+        self._service_ficha = (
+            FichaTecnicaService() if FichaTecnicaService else None)
         if self._service is None:
             logger.warning("EntradaService nao encontrado")
         if self._service_produto is None:
             logger.warning("ProdutoService nao encontrado")
         if self._service_motivo is None:
             logger.warning("MotivoEntradaService nao encontrado")
+        if self._service_ficha is None:
+            logger.warning("FichaTecnicaService nao encontrado")
 
         self._modo = MODO_INICIAL
         self._fase = FASE_CABECALHO
@@ -353,12 +364,11 @@ class EntradaController(QWidget):
         """Hook para o acionamento da produção.
 
         Quando o motivo selecionado tem baixa_producao=True (Produção),
-        a produção será acionada aqui — após os testes dos controles.
+        a baixa da ficha técnica é calculada no salvar (_anexar_baixas).
         """
         motivo = self._motivo_atual()
         if motivo and motivo.baixa_producao:
             logger.info("Motivo de produção selecionado: %s", motivo.codigo)
-            # TODO: acionamento da produção
 
         # a regra do milho depende do motivo: reavalia os campos visíveis
         if self._produto_selecionado is not None:
@@ -447,7 +457,6 @@ class EntradaController(QWidget):
                 self, "Atenção", "Informe o produto do item.")
             self.ui.txt_Cod_Prod.setFocus()
             return
-
         try:
             qtde = float(self.ui.txt_Qtde.text().strip().replace(",", "."))
         except ValueError:
@@ -489,6 +498,24 @@ class EntradaController(QWidget):
                     self, "Atenção", "O custo não pode ser negativo.")
                 self.ui.txt_Custo.setFocus()
                 return
+
+        # produção: acabado com ficha ganha o custo calculado da baixa
+        if (self._em_producao()
+                and produto.prod_acabado
+                and custo == 0):
+            ficha = self._buscar_ficha(produto.id)
+            if not regras_producao.ficha_valida(ficha):
+                QMessageBox.warning(
+                    self, "Atenção",
+                    f"'{produto.descricao}' é produto acabado e está sem "
+                    "ficha técnica — cadastre a ficha antes de produzir.")
+                return
+            baixas = regras_producao.calcular_baixa(ficha, qtde)
+            custo = regras_producao.custo_producao(
+                baixas,
+                {b.codigo_produto: self._custo_insumo(b.codigo_produto)
+                 for b in baixas})
+            self.ui.txt_Custo.setText(f"{custo:.4f}")
 
         # se o produto já existe na entrada, atualiza qtde/custo
         for item in self._itens:
@@ -557,6 +584,72 @@ class EntradaController(QWidget):
         self.ui.txt_Total_Itens.setText(_moeda(total))
         ajustar_larguras(self.ui.tb_Itens, coluna_stretch=1)
 
+    # ---------------- produção (baixa de ficha técnica) ----------------
+
+    def _em_producao(self) -> bool:
+        """Motivo atual aciona produção (baixa_producao=True)."""
+        motivo = self._motivo_atual()
+        return bool(motivo and motivo.baixa_producao)
+
+    def _buscar_ficha(self, produto_id: int | None):
+        """Ficha técnica do produto via service (None se não houver)."""
+        if produto_id is None or self._service_ficha is None:
+            return None
+        try:
+            return self._service_ficha.buscar_por_produto(produto_id)
+        except Exception as exc:
+            logger.exception("Falha ao buscar ficha técnica")
+            QMessageBox.critical(
+                self, "Erro",
+                "Não foi possível buscar a ficha técnica:\n"
+                f"{self._mensagem_erro(exc)}")
+            return None
+
+    def _custo_insumo(self, codigo: str) -> float:
+        """Custo cadastrado do insumo (0 se indisponível)."""
+        if self._service_produto is None:
+            return 0.0
+        try:
+            produto = self._service_produto.buscar_por_codigo(codigo)
+        except Exception:
+            logger.exception("Falha ao buscar custo do insumo %s", codigo)
+            return 0.0
+        return float(produto.custo) if produto else 0.0
+
+    def _anexar_baixas(self, entrada: Entrada) -> bool:
+        """Em produção, calcula as baixas da ficha e anexa à entrada.
+
+        Regras:
+          - item com ficha técnica -> baixa proporcional dos insumos (kg)
+          - produto acabado sem ficha -> bloqueia o salvamento
+        Devolve False (após avisar) quando o salvamento deve parar.
+        """
+        if not self._em_producao():
+            return True
+        for item in entrada.itens:
+            if item.produto_id is None:
+                continue
+            ficha = self._buscar_ficha(item.produto_id)
+            if regras_producao.ficha_valida(ficha):
+                entrada.baixas.extend(
+                    regras_producao.calcular_baixa(ficha, item.quantidade))
+                continue
+            produto = None
+            if self._service_produto is not None:
+                try:
+                    produto = self._service_produto.buscar_por_codigo(
+                        item.codigo_produto)
+                except Exception:
+                    logger.exception("Falha ao validar acabado %s",
+                                     item.codigo_produto)
+            if produto is not None and produto.prod_acabado:
+                QMessageBox.critical(
+                    self, "Atenção",
+                    f"'{item.descricao_produto}' é produto acabado e está "
+                    "sem ficha técnica — salvamento bloqueado.")
+                return False
+        return True
+
     # ---------------- salvar / excluir ----------------
 
     def _validar_entrada(self) -> bool:
@@ -596,6 +689,9 @@ class EntradaController(QWidget):
             return
 
         entrada = self._montar_entrada()
+        if not self._anexar_baixas(entrada):
+            return
+
         try:
             if self._modo == MODO_NOVO:
                 entrada = self._service.salvar(entrada)
@@ -618,7 +714,6 @@ class EntradaController(QWidget):
     def _excluir(self):
         if self._service is None or self._entrada_id is None:
             return
-
         resposta = QMessageBox.question(
             self, "Confirmar exclusão",
             f"Excluir a entrada '{self._entrada_id}' e todos os seus itens?",
@@ -627,7 +722,6 @@ class EntradaController(QWidget):
         )
         if resposta != QMessageBox.StandardButton.Yes:
             return
-
         try:
             self._service.excluir(self._entrada_id)
         except Exception as exc:
@@ -636,7 +730,6 @@ class EntradaController(QWidget):
                 self, "Erro",
                 f"Não foi possível excluir a entrada:\n{self._mensagem_erro(exc)}")
             return
-
         logger.info("Entrada excluída: id=%s", self._entrada_id)
         QMessageBox.information(
             self, "Sucesso", "Entrada excluída com sucesso.")

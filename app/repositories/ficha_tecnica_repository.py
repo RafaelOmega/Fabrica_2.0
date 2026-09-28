@@ -94,6 +94,23 @@ class FichaTecnicaRepository:
                 ficha.itens = self._buscar_itens(cur, ficha.id)
         return ficha
 
+    def buscar_por_produto(self, produto_id: int) -> FichaTecnica | None:
+        """Ficha técnica do produto (mais recente; None se não houver)."""
+        with self._conn:
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT id, {_COLUNAS_FICHA} "
+                    "FROM fichas_tecnicas WHERE produto_id = %s "
+                    "ORDER BY id DESC LIMIT 1",
+                    (produto_id,),
+                )
+                linha = cur.fetchone()
+                if not linha:
+                    return None
+                ficha = self._linha_para_ficha(linha)
+                ficha.itens = self._buscar_itens(cur, ficha.id)
+        return ficha
+
     def pesquisar(self, filtro: str = "") -> list[FichaTecnica]:
         """Fichas com a descrição do produto acabado (JOIN produtos).
 

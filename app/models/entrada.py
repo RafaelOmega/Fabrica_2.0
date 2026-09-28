@@ -34,6 +34,27 @@ class ItemEntrada:
 
 
 @dataclass
+class BaixaInsumo:
+    """Insumo consumido pela produção (baixa da ficha técnica)."""
+    produto_id: int | None = None
+    codigo_produto: str = ""
+    descricao_produto: str = ""
+    quantidade_kg: float = 0.0
+
+    @classmethod
+    def from_dict(cls, dados: dict) -> "BaixaInsumo":
+        return cls(
+            produto_id=dados.get("produto_id"),
+            codigo_produto=str(dados.get("codigo_produto", "")),
+            descricao_produto=str(dados.get("descricao_produto", "")),
+            quantidade_kg=float(dados.get("quantidade_kg", 0.0) or 0.0),
+        )
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
 class Entrada:
     motivo_id: int | None = None
     motivo_codigo: str = ""      # exibição (JOIN com motivos)
@@ -43,6 +64,7 @@ class Entrada:
     total_sql: float = 0.0       # total vindo da pesquisa (soma no SQL)
     id: int | None = None
     itens: list[ItemEntrada] = field(default_factory=list)
+    baixas: list[BaixaInsumo] = field(default_factory=list)
 
     @property
     def total(self) -> float:
@@ -60,6 +82,8 @@ class Entrada:
             sequencia=dados.get("sequencia"),
             id=dados.get("id"),
             itens=[ItemEntrada.from_dict(i) for i in dados.get("itens", [])],
+            baixas=[BaixaInsumo.from_dict(b)
+                    for b in dados.get("baixas", [])],
         )
 
     def to_dict(self) -> dict:
