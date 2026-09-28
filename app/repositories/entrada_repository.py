@@ -104,6 +104,11 @@ class EntradaRepository:
                     "DELETE FROM alteracoes_custo WHERE entrada_id = %s",
                     (entrada_id,),
                 )
+                # remove os itens da entrada (FK sem CASCADE no banco real)
+                cur.execute(
+                    "DELETE FROM itens_entrada WHERE entrada_id = %s",
+                    (entrada_id,),
+                )
                 cur.execute(
                     "DELETE FROM entradas WHERE id = %s",
                     (entrada_id,),
