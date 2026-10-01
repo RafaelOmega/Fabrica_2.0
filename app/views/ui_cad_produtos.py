@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'cad_produtosZubYMQ.ui'
+## Form generated from reading UI file 'cad_produtosVqgsGK.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -15,18 +15,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QCheckBox, QDoubleSpinBox, QFrame,
-    QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QSizePolicy, QSpacerItem, QVBoxLayout,
-    QWidget)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox,
+    QFrame, QGridLayout, QHBoxLayout, QLabel,
+    QLineEdit, QPushButton, QSizePolicy, QSpacerItem,
+    QVBoxLayout, QWidget)
 
 class Ui_Cad_Produtos(object):
     def setupUi(self, Cad_Produtos):
         if not Cad_Produtos.objectName():
             Cad_Produtos.setObjectName(u"Cad_Produtos")
-        Cad_Produtos.resize(623, 221)
-        Cad_Produtos.setMinimumSize(QSize(623, 221))
-        Cad_Produtos.setMaximumSize(QSize(663, 221))
+        Cad_Produtos.resize(628, 221)
         font = QFont()
         font.setFamilies([u"Segoe UI Semibold"])
         font.setPointSize(10)
@@ -38,6 +36,8 @@ class Ui_Cad_Produtos(object):
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
         self.frm_Cadastro = QFrame(Cad_Produtos)
         self.frm_Cadastro.setObjectName(u"frm_Cadastro")
+        self.frm_Cadastro.setMinimumSize(QSize(628, 221))
+        self.frm_Cadastro.setMaximumSize(QSize(628, 221))
         self.frm_Cadastro.setFrameShape(QFrame.Shape.StyledPanel)
         self.frm_Cadastro.setFrameShadow(QFrame.Shadow.Raised)
         self.verticalLayout = QVBoxLayout(self.frm_Cadastro)
@@ -118,6 +118,20 @@ class Ui_Cad_Produtos(object):
 
         self.horizontalLayout_5.addWidget(self.txt_Descricao)
 
+        self.lb_Unidade = QLabel(self.frm_Descricao)
+        self.lb_Unidade.setObjectName(u"lb_Unidade")
+        self.lb_Unidade.setMinimumSize(QSize(0, 30))
+        self.lb_Unidade.setMaximumSize(QSize(16777215, 30))
+
+        self.horizontalLayout_5.addWidget(self.lb_Unidade)
+
+        self.cmd_Unidade = QComboBox(self.frm_Descricao)
+        self.cmd_Unidade.setObjectName(u"cmd_Unidade")
+        self.cmd_Unidade.setMinimumSize(QSize(100, 30))
+        self.cmd_Unidade.setMaximumSize(QSize(100, 30))
+
+        self.horizontalLayout_5.addWidget(self.cmd_Unidade)
+
 
         self.gridLayout.addWidget(self.frm_Descricao, 0, 1, 1, 1)
 
@@ -129,6 +143,10 @@ class Ui_Cad_Produtos(object):
         self.horizontalLayout_6.setSpacing(5)
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
         self.horizontalLayout_6.setContentsMargins(5, 5, 5, 5)
+        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout_6.addItem(self.horizontalSpacer_2)
+
         self.lb_Peso = QLabel(self.frm_Custo)
         self.lb_Peso.setObjectName(u"lb_Peso")
         self.lb_Peso.setMinimumSize(QSize(0, 30))
@@ -259,6 +277,7 @@ class Ui_Cad_Produtos(object):
         self.bt_Pesquisar_Produtos.setText(QCoreApplication.translate("Cad_Produtos", u"...", None))
         self.bt_Novo.setText(QCoreApplication.translate("Cad_Produtos", u"+", None))
         self.lb_Descricao.setText(QCoreApplication.translate("Cad_Produtos", u"Descri\u00e7\u00e3o:", None))
+        self.lb_Unidade.setText(QCoreApplication.translate("Cad_Produtos", u"Unid.:", None))
         self.lb_Peso.setText(QCoreApplication.translate("Cad_Produtos", u"Peso do Saco:", None))
         self.txt_Peso.setSuffix(QCoreApplication.translate("Cad_Produtos", u" Kg", None))
         self.lb_Custo.setText(QCoreApplication.translate("Cad_Produtos", u"Custo Unit\u00e1rio:", None))

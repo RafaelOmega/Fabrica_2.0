@@ -157,6 +157,15 @@ _COMANDOS = (
     CREATE INDEX IF NOT EXISTS idx_kardex_saida
         ON movimentos_kardex (saida_id)
     """,
+    # ---------------- unidades de medida ----------------
+    """
+    CREATE TABLE IF NOT EXISTS unidades_medida (
+        id              SERIAL PRIMARY KEY,
+        codigo          VARCHAR(20) NOT NULL UNIQUE,
+        descricao       VARCHAR(120) NOT NULL,
+        fator_conversao NUMERIC(12,4) NOT NULL DEFAULT 0
+    )
+    """,
 )
 
 # Backfill idempotente: espelha entradas lançadas antes da tabela existir.

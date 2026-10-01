@@ -9,6 +9,9 @@ from app.controllers.cad_motivo_entrada_controller import CadMotivoEntradaContro
 from app.controllers.cad_ficha_tecnica_controller import CadFichaTecnicaController
 from app.controllers.entrada_controller import EntradaController
 from app.controllers.saida_controller import SaidaController
+from app.controllers.cad_unidade_medida_controller import (
+    CadUnidadeMedidaController,
+)
 
 from app.controllers.relatorio_ficha_tecnica_controller import (
     RelFichaTecnicaController,
@@ -52,6 +55,8 @@ class MainWindowController(QMainWindow):
             pai)
         self._criadores["entrada"] = lambda pai: EntradaController(pai)
         self._criadores["saida"] = lambda pai: SaidaController(pai)
+        self._criadores["unidade_medida"] = lambda pai: CadUnidadeMedidaController(
+            pai)
 
         self._criadores["rel_fichas_tecnicas"] = (
             lambda pai: RelFichaTecnicaController(pai))
