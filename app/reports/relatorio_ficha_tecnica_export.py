@@ -12,8 +12,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
 from app.models.relatorio_ficha_tecnica import FichaTecnicaRelatorio
-from app.reports.relatorio_ficha_tecnica_pdf import (_moeda, _moeda4, _numero,
-                                                     _numero_limpo,
+from app.reports.relatorio_ficha_tecnica_pdf import (_moeda, _numero_limpo,
+                                                     _proporcao,
                                                      _valor_unitario)
 from app.utils.logger import get_logger
 
@@ -23,10 +23,11 @@ AZUL = "1F3B5B"
 ZEBRA = "F2F5F8"
 TOTAL = "E8EDF2"
 
-_CABECALHOS = ["Código", "Insumos", "Qtde (kg)", "Custo/Saco", "Custo/kg"]
+_CABECALHOS = ["Cod", "Produto", "Peso", "Custo", "Custo KG",
+               "Batida", "Custo Batida", "Qtde Unit.", "Custo Unit."]
 _FMT_MOEDA = '"R$" #,##0.00'
-_FMT_MOEDA4 = '"R$" #,##0.0000'
-_FMT_QTDE = "0.0000"
+_FMT_PESO = "0.####"
+_FMT_PROP = "0.##########"
 
 
 # ---------------- XLSX ----------------
@@ -49,7 +50,8 @@ def gerar_xlsx_ficha_tecnica(fichas: list[FichaTecnicaRelatorio],
     for ficha in fichas:
         linha = _bloco_xlsx(ws, linha, ficha)
 
-    for coluna, largura in zip("ABCDE", (14, 46, 14, 14, 14)):
+    for coluna, largura in zip("ABCDEFGHI",
+                               (10, 38, 8, 12, 12, 10, 14, 14, 12)):
         ws.column_dimensions[coluna].width = largura
 
     wb.save(caminho)
@@ -69,7 +71,7 @@ def _bloco_xlsx(ws, linha: int,
     celula.font = Font(bold=True, color="FFFFFF")
     celula.fill = PatternFill("solid", fgColor=AZUL)
     ws.merge_cells(start_row=linha, start_column=1,
-                   end_row=linha, end_column=5)
+                   end_row=linha, end_column=9)
     linha += 1
 
     ws.cell(linha, 1,
@@ -89,20 +91,45 @@ def _bloco_xlsx(ws, linha: int,
     for item in ficha.itens:
         ws.cell(linha, 1, item.codigo_produto)
         ws.cell(linha, 2, item.descricao)
-        ws.cell(linha, 3, item.quantidade_kg).number_format = _FMT_QTDE
+        ws.cell(linha, 3, item.peso_saco).number_format = _FMT_PESO
         if item.custo_saco is not None:
             ws.cell(linha, 4, item.custo_saco).number_format = _FMT_MOEDA
         if item.custo_kg is not None:
-            ws.cell(linha, 5, item.custo_kg).number_format = _FMT_MOEDA4
+            ws.cell(linha, 5, item.custo_kg).number_format = _FMT_MOEDA
+        ws.cell(linha, 6, item.quantidade_kg).number_format = _FMT_PESO
+        if item.custo_batida is not None:
+            ws.cell(linha, 7, item.custo_batida).number_format = _FMT_MOEDA
+        qtde_unit = ficha.qtde_unitaria(item)
+        if qtde_unit is not None:
+            ws.cell(linha, 8, qtde_unit).number_format = _FMT_PROP
+        custo_unit = ficha.custo_unitario(item)
+        if custo_unit is not None:
+            ws.cell(linha, 9, custo_unit).number_format = _FMT_MOEDA
         linha += 1
 
-    cel_rotulo = ws.cell(linha, 2, "Custo da batida")
+    total_kg = ficha.total_batida_kg
+    cel_rotulo = ws.cell(linha, 2, "Totais")
     cel_rotulo.font = Font(bold=True)
     cel_rotulo.fill = PatternFill("solid", fgColor=TOTAL)
-    cel_valor = ws.cell(linha, 5, ficha.custo_batida)
-    cel_valor.font = Font(bold=True)
-    cel_valor.fill = PatternFill("solid", fgColor=TOTAL)
-    cel_valor.number_format = _FMT_MOEDA
+    if total_kg is not None:
+        cel_kg = ws.cell(linha, 6, total_kg)
+        cel_kg.font = Font(bold=True)
+        cel_kg.fill = PatternFill("solid", fgColor=TOTAL)
+        cel_kg.number_format = _FMT_PESO
+    cel_batida = ws.cell(linha, 7, ficha.custo_batida)
+    cel_batida.font = Font(bold=True)
+    cel_batida.fill = PatternFill("solid", fgColor=TOTAL)
+    cel_batida.number_format = _FMT_MOEDA
+    if ficha.peso_produto > 0:
+        cel_peso = ws.cell(linha, 8, ficha.peso_produto)
+        cel_peso.font = Font(bold=True)
+        cel_peso.fill = PatternFill("solid", fgColor=TOTAL)
+        cel_peso.number_format = _FMT_PESO
+    if unitario is not None:
+        cel_unit = ws.cell(linha, 9, unitario)
+        cel_unit.font = Font(bold=True)
+        cel_unit.fill = PatternFill("solid", fgColor=TOTAL)
+        cel_unit.number_format = _FMT_MOEDA
     return linha + 2
 
 
@@ -129,18 +156,34 @@ def gerar_csv_ficha_tecnica(fichas: list[FichaTecnicaRelatorio],
             writer.writerow(_CABECALHOS)
             if not ficha.itens:
                 writer.writerow(
-                    ["—", "sem insumos cadastrados", "—", "—", "—"])
+                    ["—", "sem insumos cadastrados"] + ["—"] * 7)
             for item in ficha.itens:
+                qtde_unit = ficha.qtde_unitaria(item)
+                custo_unit = ficha.custo_unitario(item)
                 writer.writerow([
                     item.codigo_produto,
                     item.descricao,
-                    _numero(item.quantidade_kg, 4),
+                    _numero_limpo(item.peso_saco),
                     _moeda(item.custo_saco)
                     if item.custo_saco is not None else "—",
-                    _moeda4(item.custo_kg)
+                    _moeda(item.custo_kg)
                     if item.custo_kg is not None else "—",
+                    _numero_limpo(item.quantidade_kg),
+                    _moeda(item.custo_batida)
+                    if item.custo_batida is not None else "—",
+                    _proporcao(qtde_unit)
+                    if qtde_unit is not None else "—",
+                    _moeda(custo_unit)
+                    if custo_unit is not None else "—",
                 ])
-            writer.writerow(
-                ["", "Custo da batida", "", "", _moeda(ficha.custo_batida)])
+            total_kg = ficha.total_batida_kg
+            writer.writerow([
+                "", "Totais", "", "", "",
+                _numero_limpo(total_kg) if total_kg is not None else "—",
+                _moeda(ficha.custo_batida),
+                _numero_limpo(ficha.peso_produto)
+                if ficha.peso_produto > 0 else "—",
+                _moeda(unitario) if unitario is not None else "—",
+            ])
     logger.info("CSV gerado: %s", caminho)
     return caminho

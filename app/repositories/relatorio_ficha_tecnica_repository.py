@@ -26,7 +26,7 @@ class RelatorioFichaTecnicaRepository:
                 cur.execute(
                     """
                     SELECT f.id, f.codigo_produto, p.descricao,
-                           f.sacos_batida
+                           f.sacos_batida, p.peso
                       FROM fichas_tecnicas f
                       LEFT JOIN produtos p ON p.id = f.produto_id
                      WHERE (%s = ''
@@ -42,6 +42,7 @@ class RelatorioFichaTecnicaRepository:
                         id=l[0], codigo_produto=l[1],
                         descricao_produto=l[2] or "",
                         sacos_batida=float(l[3]),
+                        peso_produto=float(l[4]) if l[4] is not None else 0.0,
                     )
                     for l in cur.fetchall()
                 ]

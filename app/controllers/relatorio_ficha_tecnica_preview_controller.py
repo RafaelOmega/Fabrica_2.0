@@ -12,8 +12,8 @@ from datetime import datetime
 from PySide6.QtWidgets import (QDialog, QFileDialog, QHBoxLayout, QMessageBox,
                                QPushButton, QTextBrowser, QVBoxLayout)
 
-from app.reports.relatorio_ficha_tecnica_pdf import (_moeda, _moeda4, _numero,
-                                                     _numero_limpo,
+from app.reports.relatorio_ficha_tecnica_pdf import (_moeda, _numero_limpo,
+                                                     _proporcao,
                                                      _valor_unitario)
 from app.utils.logger import get_logger
 
@@ -45,7 +45,7 @@ class RelFichaTecnicaPreviewController(QDialog):
 
         self.setWindowTitle(
             "Pré-visualização — Relatório de Fichas Técnicas")
-        self.resize(860, 600)
+        self.resize(980, 600)
 
         self.txt_Visualizacao = QTextBrowser(self)
         self.txt_Visualizacao.setStyleSheet(_ESTILO_PAPEL)
@@ -105,32 +105,54 @@ class RelFichaTecnicaPreviewController(QDialog):
             "<table width='100%' cellspacing='0' cellpadding='4' "
             f"style='border:1px solid {LINHA};font-size:9pt;color:{TEXTO};'>",
             f"<tr style='background-color:{ZEBRA};color:{AZUL};'>"
-            "<th align='left'>Código</th><th align='left'>Insumos</th>"
-            "<th align='right'>Qtde (kg)</th>"
-            "<th align='right'>Custo/Saco</th>"
-            "<th align='right'>Custo/kg</th></tr>",
+            "<th align='left'>Cod</th><th align='left'>Produto</th>"
+            "<th align='right'>Peso</th>"
+            "<th align='right'>Custo</th>"
+            "<th align='right'>Custo KG</th>"
+            "<th align='right'>Batida</th>"
+            "<th align='right'>Custo Batida</th>"
+            "<th align='right'>Qtde Unit.</th>"
+            "<th align='right'>Custo Unit.</th></tr>",
         ]
         if ficha.itens:
             for indice, item in enumerate(ficha.itens):
                 fundo = ZEBRA if indice % 2 else "#FFFFFF"
+                qtde_unit = ficha.qtde_unitaria(item)
+                custo_unit = ficha.custo_unitario(item)
                 html.append(
                     f"<tr style='background-color:{fundo};'>"
                     f"<td>{item.codigo_produto}</td>"
                     f"<td>{item.descricao}</td>"
-                    f"<td align='right'>{_numero(item.quantidade_kg, 4)}</td>"
+                    f"<td align='right'>{_numero_limpo(item.peso_saco)}</td>"
                     f"<td align='right'>"
                     f"{_moeda(item.custo_saco) if item.custo_saco is not None else '—'}</td>"
                     f"<td align='right'>"
-                    f"{_moeda4(item.custo_kg) if item.custo_kg is not None else '—'}</td>"
+                    f"{_moeda(item.custo_kg) if item.custo_kg is not None else '—'}</td>"
+                    f"<td align='right'>{_numero_limpo(item.quantidade_kg)}</td>"
+                    f"<td align='right'>"
+                    f"{_moeda(item.custo_batida) if item.custo_batida is not None else '—'}</td>"
+                    f"<td align='right'>"
+                    f"{_proporcao(qtde_unit) if qtde_unit is not None else '—'}</td>"
+                    f"<td align='right'>"
+                    f"{_moeda(custo_unit) if custo_unit is not None else '—'}</td>"
                     "</tr>")
         else:
             html.append("<tr><td>—</td><td>sem insumos cadastrados</td>"
+                        "<td>—</td><td>—</td><td>—</td><td>—</td>"
                         "<td>—</td><td>—</td><td>—</td></tr>")
+
+        total_kg = ficha.total_batida_kg
         html.append(
             "<tr style='background-color:#E8EDF2;font-weight:bold;"
             f"color:{TEXTO};'>"
-            "<td colspan='2'>Custo da batida</td><td></td><td></td>"
-            f"<td align='right'>{_moeda(ficha.custo_batida)}</td></tr>"
+            "<td colspan='2'>Totais</td><td></td><td></td><td></td>"
+            f"<td align='right'>"
+            f"{_numero_limpo(total_kg) if total_kg is not None else '—'}</td>"
+            f"<td align='right'>{_moeda(ficha.custo_batida)}</td>"
+            f"<td align='right'>"
+            f"{_numero_limpo(ficha.peso_produto) if ficha.peso_produto > 0 else '—'}</td>"
+            f"<td align='right'>"
+            f"{_moeda(unitario) if unitario is not None else '—'}</td>"
             "</table><br>")
         return "".join(html)
 
