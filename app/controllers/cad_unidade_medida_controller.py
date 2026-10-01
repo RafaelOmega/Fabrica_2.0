@@ -3,6 +3,9 @@
 
 Responsabilidade: APENAS controle de tela (botões, campos, navegação).
 Operações de dados são delegadas ao UnidadeMedidaService.
+
+O código é automático (gerado no salvar): o campo txt_Codigo é
+somente leitura, exibindo o código da unidade carregada/salva.
 """
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QShortcut
@@ -56,14 +59,15 @@ class CadUnidadeMedidaController(QWidget):
         self.ui.bt_Excluir.clicked.connect(self._excluir)
 
     def _conectar_teclas(self):
-        self.ui.txt_Codigo.returnPressed.connect(self._ao_enter_codigo)
+        # código é automático: Enter no campo abre a pesquisa
+        self.ui.txt_Codigo.returnPressed.connect(self._pesquisar)
         self._at_f2 = QShortcut(QKeySequence(Qt.Key.Key_F2), self)
         self._at_f2.activated.connect(self._novo)
 
     # ---------------- estados da tela ----------------
 
     def _estado_inicial(self):
-        self.ui.txt_Codigo.setEnabled(True)
+        self.ui.txt_Codigo.setEnabled(False)  # código é automático
         self.ui.bt_Pesquisar_Unidade_Medida.setEnabled(True)
         self.ui.bt_Novo.setEnabled(True)
 
@@ -75,7 +79,8 @@ class CadUnidadeMedidaController(QWidget):
         self.ui.bt_Limpar.setEnabled(False)
 
     def _estado_novo(self):
-        self.ui.txt_Codigo.setEnabled(True)
+        self.ui.txt_Codigo.setEnabled(False)  # código é automático
+        self.ui.txt_Codigo.clear()
         self.ui.txt_Descricao.setEnabled(True)
         self.ui.dsb_Fator.setEnabled(True)
         self.ui.bt_Salvar.setEnabled(True)
@@ -115,15 +120,11 @@ class CadUnidadeMedidaController(QWidget):
 
     # ---------------- acoes de tela ----------------
 
-    def _iniciar_novo(self, codigo: str = ""):
+    def _iniciar_novo(self):
         self._limpar_campos()
         self._modo = ESTADO_NOVO
         self._estado_novo()
-        if codigo:
-            self.ui.txt_Codigo.setText(codigo)
-            self.ui.txt_Descricao.setFocus()
-        else:
-            self.ui.txt_Codigo.setFocus()
+        self.ui.txt_Descricao.setFocus()
 
     def _novo(self):
         if self._modo != ESTADO_INICIAL:
@@ -136,41 +137,6 @@ class CadUnidadeMedidaController(QWidget):
         self._modo = ESTADO_EDICAO
         self._estado_edicao()
         self.ui.txt_Descricao.setFocus()
-
-    def _ao_enter_codigo(self):
-        codigo = self.ui.txt_Codigo.text().strip()
-        if not codigo:
-            self._pesquisar()
-            return
-
-        if self._service is None:
-            QMessageBox.critical(
-                self, "Erro", "Service de unidades indisponível.")
-            return
-
-        try:
-            unidade = self._service.buscar_por_codigo(codigo)
-        except Exception as exc:
-            logger.exception("Falha ao buscar unidade por código")
-            QMessageBox.critical(
-                self, "Erro",
-                f"Não foi possível buscar a unidade:"
-                f"\n{self._mensagem_erro(exc)}")
-            return
-
-        if unidade:
-            self._preencher(unidade)
-            return
-
-        resposta = QMessageBox.question(
-            self, "Unidade não encontrada",
-            f"Nenhuma unidade com o código '{codigo}'.\n\n"
-            "Deseja cadastrar uma nova?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        if resposta == QMessageBox.StandardButton.Yes:
-            self._iniciar_novo(codigo)
 
     def _pesquisar(self):
         from app.controllers.pesquisa_unidade_medida_controller import (
@@ -190,14 +156,7 @@ class CadUnidadeMedidaController(QWidget):
                 self._preencher(unidade)
 
     def _validar_obrigatorios(self) -> bool:
-        codigo = self.ui.txt_Codigo.text().strip()
         descricao = self.ui.txt_Descricao.text().strip()
-
-        if not codigo:
-            QMessageBox.warning(
-                self, "Atenção", "Informe o código da unidade.")
-            self.ui.txt_Codigo.setFocus()
-            return False
 
         if not descricao:
             QMessageBox.warning(
@@ -225,7 +184,9 @@ class CadUnidadeMedidaController(QWidget):
         dados = self._coletar_dados()
         try:
             if self._modo == ESTADO_NOVO:
-                self._service.salvar(dados)
+                unidade = self._service.salvar(dados)
+                # exibe o código gerado automaticamente
+                self.ui.txt_Codigo.setText(unidade.codigo)
             elif self._modo == ESTADO_EDICAO:
                 self._service.atualizar(dados)
             else:
@@ -253,8 +214,7 @@ class CadUnidadeMedidaController(QWidget):
         codigo = self.ui.txt_Codigo.text().strip()
         if not codigo:
             QMessageBox.warning(
-                self, "Atenção", "Informe o código da unidade a excluir.")
-            self.ui.txt_Codigo.setFocus()
+                self, "Atenção", "Nenhuma unidade carregada para excluir.")
             return
 
         resposta = QMessageBox.question(

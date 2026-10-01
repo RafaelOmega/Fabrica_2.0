@@ -82,6 +82,7 @@ class MainWindowController(QMainWindow):
             "produtos":       (self.ui.actionProdutos, "Produtos"),
             "motivo_entrada": (self.ui.actionMotivo_Entrada, "Motivo de Entrada"),
             "ficha_tecnica":  (self.ui.actionFicha_Tecnica, "Ficha Técnica"),
+            "unidade_medida": (self.ui.actionUnidadeMedida, "Unidade de Medida"),
             "entrada":        (self.ui.actionEntrada, "Entrada"),
             "saida":          (self.ui.actionSaida, "Saída"),
             "estoque":        (self.ui.actionEstoque, "Estoque"),

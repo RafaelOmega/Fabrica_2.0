@@ -3,6 +3,9 @@
 
 Schema:
   unidades_medida (id, codigo, descricao, fator_conversao)
+
+O código é automático: sequencial numérico gerado no INSERT
+(001, 002, ...), ignorando eventuais códigos não numéricos.
 """
 from app.database import get_connection
 from app.models.unidade_medida import UnidadeMedida
@@ -11,6 +14,12 @@ from app.utils.logger import get_logger
 logger = get_logger("unidade_medida_repository")
 
 _COLUNAS = "codigo, descricao, fator_conversao"
+
+# próximo código numérico existente + 1, formatado com 3 dígitos
+_PROXIMO_CODIGO = (
+    "LPAD((SELECT COALESCE(MAX(CAST(codigo AS INTEGER)), 0) + 1 "
+    "      FROM unidades_medida WHERE codigo ~ '^[0-9]+$')::TEXT, 3, '0')"
+)
 
 
 class UnidadeMedidaRepository:
@@ -21,15 +30,17 @@ class UnidadeMedidaRepository:
     # ---------------- escrita ----------------
 
     def salvar(self, unidade: UnidadeMedida) -> UnidadeMedida:
+        """Insere a unidade; o código é gerado automaticamente."""
         with self._conn:
             with self._conn.cursor() as cur:
                 cur.execute(
                     f"INSERT INTO unidades_medida ({_COLUNAS}) "
-                    "VALUES (%s, %s, %s) RETURNING id",
-                    (unidade.codigo, unidade.descricao,
-                     unidade.fator_conversao),
+                    f"VALUES ({_PROXIMO_CODIGO}, %s, %s) "
+                    "RETURNING id, codigo",
+                    (unidade.descricao, unidade.fator_conversao),
                 )
-                unidade.id = cur.fetchone()[0]
+                linha = cur.fetchone()
+                unidade.id, unidade.codigo = linha[0], linha[1]
         logger.info("Unidade inserida: %s", unidade.codigo)
         return unidade
 
