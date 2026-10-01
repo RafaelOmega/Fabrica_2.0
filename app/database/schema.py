@@ -95,7 +95,7 @@ _COMANDOS = (
         quantidade     NUMERIC(12,4) NOT NULL DEFAULT 0,
         custo_unitario NUMERIC(12,4),
         entrada_id     INTEGER REFERENCES entradas(id),
-        saida_id       INTEGER,  -- FK criada abaixo, junto das saídas
+        saida_id       INTEGER,
         criado_em      TIMESTAMP NOT NULL DEFAULT NOW()
     )
     """,
@@ -109,6 +109,16 @@ _COMANDOS = (
     """,
     """
     CREATE TABLE IF NOT EXISTS itens_saida (
+        id         SERIAL PRIMARY KEY,
+        saida_id   INTEGER NOT NULL
+                   REFERENCES saidas(id) ON DELETE CASCADE,
+        produto_id INTEGER REFERENCES produtos(id),
+        quantidade NUMERIC(12,4) NOT NULL DEFAULT 0,
+        custo      NUMERIC(12,4) NOT NULL DEFAULT 0
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS itens_saida_mao_obra (
         id         SERIAL PRIMARY KEY,
         saida_id   INTEGER NOT NULL
                    REFERENCES saidas(id) ON DELETE CASCADE,
@@ -154,6 +164,10 @@ _COMANDOS = (
         ON itens_saida (saida_id)
     """,
     """
+    CREATE INDEX IF NOT EXISTS idx_itens_saida_mao_obra_saida
+        ON itens_saida_mao_obra (saida_id)
+    """,
+    """
     CREATE INDEX IF NOT EXISTS idx_kardex_saida
         ON movimentos_kardex (saida_id)
     """,
@@ -184,7 +198,6 @@ _COMANDOS = (
 )
 
 # Backfill idempotente: espelha entradas lançadas antes da tabela existir.
-# A guarda NOT EXISTS impede duplicação em execuções repetidas.
 _BACKFILL_KARDEX = """
     INSERT INTO movimentos_kardex
         (produto_id, data_movimento, tipo, documento, historico,

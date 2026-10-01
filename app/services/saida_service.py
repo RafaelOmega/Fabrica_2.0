@@ -2,6 +2,7 @@
 """Service de saídas: regras de negócio."""
 from app.models.saida import Saida
 from app.repositories.saida_repository import SaidaRepository
+from app.repositories.ficha_tecnica_repository import FichaTecnicaRepository
 from app.utils.logger import get_logger
 
 logger = get_logger("saida_service")
@@ -11,6 +12,7 @@ class SaidaService:
 
     def __init__(self):
         self._repo = SaidaRepository()
+        self._ficha_repo = FichaTecnicaRepository()
 
     def salvar(self, saida: Saida) -> Saida:
         return self._repo.salvar(saida)
@@ -32,3 +34,7 @@ class SaidaService:
 
     def saldo_atual(self, produto_id: int) -> float:
         return self._repo.saldo_atual(produto_id)
+
+    def buscar_ficha_produto(self, produto_id: int):
+        """Ficha técnica do produto acabado (None se não houver)."""
+        return self._ficha_repo.buscar_por_produto(produto_id)

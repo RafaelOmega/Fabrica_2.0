@@ -4,18 +4,23 @@
 Schema:
   saidas       (id, sequencia, data_saida)
   itens_saida  (id, saida_id, produto_id, quantidade, custo)
+  itens_saida_mao_obra (id, saida_id, produto_id, quantidade, custo)
   movimentos_kardex  (espelho: tipo 'S' com saida_id preenchido)
+
+A mão de obra da saída é persistida em itens_saida_mao_obra e NÃO
+gera movimento no kardex (não controla estoque).
 """
 from datetime import date
 
 from app.database import get_connection
-from app.models.saida import ItemSaida, Saida
+from app.models.saida import ItemSaida, ItemSaidaMaoObra, Saida
 from app.utils.logger import get_logger
 
 logger = get_logger("saida_repository")
 
 _COLUNAS = "sequencia, data_saida"
 _COLUNAS_ITEM = "saida_id, produto_id, quantidade, custo"
+_COLUNAS_MAO_OBRA = "saida_id, produto_id, quantidade, custo"
 
 
 class SaidaRepository:
@@ -26,7 +31,7 @@ class SaidaRepository:
     # ---------------- escrita ----------------
 
     def salvar(self, saida: Saida) -> Saida:
-        """Grava cabeçalho + itens + kardex em transação única."""
+        """Grava cabeçalho + itens + mão de obra + kardex em transação única."""
         with self._conn:
             with self._conn.cursor() as cur:
                 cur.execute(
@@ -40,8 +45,10 @@ class SaidaRepository:
                 saida.id, saida.sequencia = linha[0], linha[1]
                 self._inserir_itens(cur, saida)
                 self._inserir_kardex(cur, saida)
-        logger.info("Saída inserida: id=%s sequencia=%s (%s itens)",
-                    saida.id, saida.sequencia, len(saida.itens))
+                self._inserir_mao_obra(cur, saida)
+        logger.info("Saída inserida: id=%s sequencia=%s (%s itens, %s mão de obra)",
+                    saida.id, saida.sequencia,
+                    len(saida.itens), len(saida.mao_obra))
         return saida
 
     def atualizar(self, saida: Saida) -> bool:
@@ -62,6 +69,12 @@ class SaidaRepository:
                     (saida.id,),
                 )
                 self._inserir_kardex(cur, saida)
+                # mão de obra: regrava a lista completa
+                cur.execute(
+                    "DELETE FROM itens_saida_mao_obra WHERE saida_id = %s",
+                    (saida.id,),
+                )
+                self._inserir_mao_obra(cur, saida)
         logger.info("Saída atualizada: id=%s", saida.id)
         return True
 
@@ -71,6 +84,11 @@ class SaidaRepository:
                 # remove o espelho no kardex
                 cur.execute(
                     "DELETE FROM movimentos_kardex WHERE saida_id = %s",
+                    (saida_id,),
+                )
+                # remove a mão de obra
+                cur.execute(
+                    "DELETE FROM itens_saida_mao_obra WHERE saida_id = %s",
                     (saida_id,),
                 )
                 # remove os itens (FK sem CASCADE em bancos antigos)
@@ -95,6 +113,17 @@ class SaidaRepository:
                 f"INSERT INTO itens_saida ({_COLUNAS_ITEM}) "
                 "VALUES (%s, %s, %s, %s)",
                 (saida.id, item.produto_id, item.quantidade, item.custo),
+            )
+
+    def _inserir_mao_obra(self, cur, saida: Saida):
+        """Grava a mão de obra da saída (não vai ao kardex)."""
+        for mo in saida.mao_obra:
+            if mo.produto_id is None:
+                continue
+            cur.execute(
+                f"INSERT INTO itens_saida_mao_obra ({_COLUNAS_MAO_OBRA}) "
+                "VALUES (%s, %s, %s, %s)",
+                (saida.id, mo.produto_id, mo.quantidade, mo.custo),
             )
 
     def _inserir_kardex(self, cur, saida: Saida):
@@ -128,6 +157,7 @@ class SaidaRepository:
                     return None
                 saida = self._linha_para_saida(linha)
                 saida.itens = self._buscar_itens(cur, saida.id)
+                saida.mao_obra = self._buscar_mao_obra(cur, saida.id)
         return saida
 
     def buscar_por_sequencia(self, sequencia: int) -> Saida | None:
@@ -143,6 +173,7 @@ class SaidaRepository:
                     return None
                 saida = self._linha_para_saida(linha)
                 saida.itens = self._buscar_itens(cur, saida.id)
+                saida.mao_obra = self._buscar_mao_obra(cur, saida.id)
         return saida
 
     def pesquisar(self, filtro: str = "") -> list[Saida]:
@@ -211,6 +242,26 @@ class SaidaRepository:
         )
         return [
             ItemSaida(
+                id=l[0], saida_id=l[1], produto_id=l[2],
+                codigo_produto=l[3] or "",
+                descricao_produto=l[4] or "",
+                quantidade=float(l[5]), custo=float(l[6]),
+            )
+            for l in cur.fetchall()
+        ]
+
+    @staticmethod
+    def _buscar_mao_obra(cur, saida_id: int) -> list[ItemSaidaMaoObra]:
+        cur.execute(
+            "SELECT m.id, m.saida_id, m.produto_id, p.codigo, "
+            "p.descricao, m.quantidade, m.custo "
+            "FROM itens_saida_mao_obra m "
+            "LEFT JOIN produtos p ON p.id = m.produto_id "
+            "WHERE m.saida_id = %s ORDER BY m.id",
+            (saida_id,),
+        )
+        return [
+            ItemSaidaMaoObra(
                 id=l[0], saida_id=l[1], produto_id=l[2],
                 codigo_produto=l[3] or "",
                 descricao_produto=l[4] or "",

@@ -189,6 +189,7 @@
     <addaction name="actionEstoque"/>
     <addaction name="actionFichaKardexProduto"/>
     <addaction name="actionRel_Fichas_Tecnicas"/>
+    <addaction name="actionMaoObra"/>
    </widget>
    <addaction name="menuCadastros"/>
    <addaction name="menuLan_amentos"/>
@@ -237,6 +238,11 @@
   <action name="actionUnidadeMedida">
    <property name="text">
     <string>Unidade de Medida</string>
+   </property>
+  </action>
+  <action name="actionMaoObra">
+   <property name="text">
+    <string>Mão de Obra</string>
    </property>
   </action>
  </widget>

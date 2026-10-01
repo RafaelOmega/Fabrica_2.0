@@ -7,9 +7,11 @@ from dataclasses import asdict, dataclass, field
 class ItemFichaTecnica:
     produto_id: int | None = None
     codigo_produto: str = ""
+    descricao_produto: str = ""
     quantidade_kg: float = 0.0
     fator_conversao_kg_saco: float = 0.0  # kg por saco (uni. de medida)
-    controla_estoque: bool = True         # só baixa insumo que controla estoque
+    mao_obra: bool = False
+    custo: float = 0.0
     ficha_id: int | None = None
     id: int | None = None
 
@@ -18,10 +20,12 @@ class ItemFichaTecnica:
         return cls(
             produto_id=dados.get("produto_id"),
             codigo_produto=str(dados.get("codigo_produto", "")),
+            descricao_produto=str(dados.get("descricao_produto", "")),
             quantidade_kg=float(dados.get("quantidade_kg", 0.0) or 0.0),
             fator_conversao_kg_saco=float(
                 dados.get("fator_conversao_kg_saco", 0.0) or 0.0),
-            controla_estoque=bool(dados.get("controla_estoque", True)),
+            mao_obra=bool(dados.get("mao_obra", False)),
+            custo=float(dados.get("custo", 0.0) or 0.0),
             ficha_id=dados.get("ficha_id"),
             id=dados.get("id"),
         )

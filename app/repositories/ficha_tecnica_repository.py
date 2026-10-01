@@ -5,20 +5,8 @@ from app.models.ficha_tecnica import FichaTecnica, ItemFichaTecnica
 from app.utils.logger import get_logger
 
 logger = get_logger("ficha_tecnica_repository")
-
 _COLUNAS_FICHA = "produto_id, codigo_produto, sacos_batida"
 _COLUNAS_ITEM = "ficha_id, produto_id, codigo_produto, quantidade_kg"
-
-# itens com o fator de conversão do insumo (kg por saco): UNIDADE -> produto
-_SELECT_ITENS = (
-    "SELECT i.id, i.ficha_id, i.produto_id, i.codigo_produto, "
-    "       i.quantidade_kg, "
-    "       COALESCE(um.fator_conversao, 0) AS fator_kg_saco "
-    "  FROM itens_ficha_tecnica i "
-    "  LEFT JOIN produtos p ON p.id = i.produto_id "
-    "  LEFT JOIN unidades_medida um ON um.codigo = p.unidade "
-    " WHERE i.ficha_id = %s ORDER BY i.id"
-)
 
 
 class FichaTecnicaRepository:
@@ -151,7 +139,8 @@ class FichaTecnicaRepository:
         cur.execute(
             """
             SELECT i.id, i.ficha_id, i.produto_id, i.codigo_produto,
-                   i.quantidade_kg, COALESCE(p.controla_estoque, true)
+                   i.quantidade_kg, COALESCE(p.descricao, ''),
+                   COALESCE(p.mao_obra, false), COALESCE(p.custo, 0)
               FROM itens_ficha_tecnica i
               LEFT JOIN produtos p ON p.id = i.produto_id
              WHERE i.ficha_id = %s ORDER BY i.id
@@ -162,7 +151,9 @@ class FichaTecnicaRepository:
             ItemFichaTecnica(
                 id=l[0], ficha_id=l[1], produto_id=l[2],
                 codigo_produto=l[3], quantidade_kg=float(l[4]),
-                controla_estoque=bool(l[5]),
+                descricao_produto=l[5] or "",
+                mao_obra=bool(l[6]),
+                custo=float(l[7] or 0),
             )
             for l in cur.fetchall()
         ]

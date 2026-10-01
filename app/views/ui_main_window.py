@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_windowmiREZJ.ui'
+## Form generated from reading UI file 'main_windowHvJznz.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -49,6 +49,8 @@ class Ui_MainWindow(object):
         self.actionRel_Fichas_Tecnicas.setObjectName(u"actionRel_Fichas_Tecnicas")
         self.actionUnidadeMedida = QAction(MainWindow)
         self.actionUnidadeMedida.setObjectName(u"actionUnidadeMedida")
+        self.actionMaoObra = QAction(MainWindow)
+        self.actionMaoObra.setObjectName(u"actionMaoObra")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -128,6 +130,7 @@ class Ui_MainWindow(object):
         self.menuRelatorios.addAction(self.actionEstoque)
         self.menuRelatorios.addAction(self.actionFichaKardexProduto)
         self.menuRelatorios.addAction(self.actionRel_Fichas_Tecnicas)
+        self.menuRelatorios.addAction(self.actionMaoObra)
 
         self.retranslateUi(MainWindow)
 
@@ -145,6 +148,7 @@ class Ui_MainWindow(object):
         self.actionFichaKardexProduto.setText(QCoreApplication.translate("MainWindow", u"Ficha Kardex do Produto", None))
         self.actionRel_Fichas_Tecnicas.setText(QCoreApplication.translate("MainWindow", u"Fichas Tecnicas", None))
         self.actionUnidadeMedida.setText(QCoreApplication.translate("MainWindow", u"Unidade de Medida", None))
+        self.actionMaoObra.setText(QCoreApplication.translate("MainWindow", u"M\u00e3o de Obra", None))
         self.lb_Comandos.setText("")
         self.menuCadastros.setTitle(QCoreApplication.translate("MainWindow", u"Cadastros", None))
         self.menuLan_amentos.setTitle(QCoreApplication.translate("MainWindow", u"Lan\u00e7amentos", None))

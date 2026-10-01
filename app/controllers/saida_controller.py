@@ -13,7 +13,7 @@ from PySide6.QtGui import (QKeySequence, QShortcut, QStandardItem,
                            QStandardItemModel)
 from PySide6.QtWidgets import QMessageBox, QWidget
 
-from app.models.saida import ItemSaida, Saida
+from app.models.saida import ItemSaida, ItemSaidaMaoObra, Saida
 from app.utils.logger import get_logger
 from app.utils.table_utils import ajustar_larguras, configurar_tabela
 from app.utils.erros import mensagem_erro
@@ -31,28 +31,25 @@ except ImportError:
 
 logger = get_logger("saida")
 
-# modos
 MODO_INICIAL = "inicial"
 MODO_NOVO = "novo"
 MODO_VISUALIZACAO = "visualizacao"
 MODO_EDICAO = "edicao"
 
-# fases dentro de novo/edição
 FASE_CABECALHO = "cabecalho"
 FASE_ITENS = "itens"
 FASE_FINALIZADO = "finalizado"
 
 COLUNAS_ITENS = ["Código", "Produto", "Qtde", "Custo", "Total"]
+COLUNAS_MAO_OBRA = ["Código", "Mão de Obra", "Qtde", "Custo", "Total"]
 
 
 def _moeda(valor: float) -> str:
-    """Formata valor no padrão monetário brasileiro: R$ 1.234,56."""
-    texto = f"{valor:,.2f}"  # 1,234.56 (padrão US)
+    texto = f"{valor:,.2f}"
     return "R$ " + texto.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def _numero(valor: float) -> str:
-    """Formata quantidade com 4 casas: 1.234,5678."""
     texto = f"{valor:,.4f}"
     return texto.replace(",", "X").replace(".", ",").replace("X", ".")
 
@@ -61,7 +58,6 @@ class SaidaController(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-
         self.ui = Ui_Saida()
         self.ui.setupUi(self)
 
@@ -75,21 +71,29 @@ class SaidaController(QWidget):
         self._modo = MODO_INICIAL
         self._fase = FASE_CABECALHO
         self._itens: list[ItemSaida] = []
+        self._mao_obra: list[ItemSaidaMaoObra] = []
         self._produto_selecionado = None
         self._saida_id = None
 
         self._montar_tabela()
+        self._montar_tabela_mao_obra()
         self._conectar_botoes()
         self._conectar_teclas()
         self._limpar_campos()
 
-    # ---------------- tabela ----------------
+    # ---------------- tabelas ----------------
 
     def _montar_tabela(self):
         self._modelo = QStandardItemModel(self)
         self._modelo.setHorizontalHeaderLabels(COLUNAS_ITENS)
         self.ui.tb_Itens.setModel(self._modelo)
         configurar_tabela(self.ui.tb_Itens, coluna_stretch=1)
+
+    def _montar_tabela_mao_obra(self):
+        self._modelo_mao = QStandardItemModel(self)
+        self._modelo_mao.setHorizontalHeaderLabels(COLUNAS_MAO_OBRA)
+        self.ui.tb_Mao_Obra.setModel(self._modelo_mao)
+        configurar_tabela(self.ui.tb_Mao_Obra, coluna_stretch=1)
 
     # ---------------- conexoes ----------------
 
@@ -119,10 +123,8 @@ class SaidaController(QWidget):
     # ---------------- estados da tela ----------------
 
     def _aplicar_estado(self):
-        """Aplica habilitação dos widgets conforme modo + fase."""
         m, f = self._modo, self._fase
 
-        # ---- estado inicial ----
         if m == MODO_INICIAL:
             self.ui.txt_Sequencia.setEnabled(True)
             self.ui.bt_Pesquisa_Saida.setEnabled(True)
@@ -134,7 +136,6 @@ class SaidaController(QWidget):
                            excluir=False, limpar=False)
             return
 
-        # ---- visualização ----
         if m == MODO_VISUALIZACAO:
             self.ui.txt_Sequencia.setEnabled(False)
             self.ui.bt_Pesquisa_Saida.setEnabled(False)
@@ -146,7 +147,6 @@ class SaidaController(QWidget):
                            excluir=True, limpar=True)
             return
 
-        # ---- novo / edição ----
         self.ui.txt_Sequencia.setEnabled(False)
         self.ui.bt_Pesquisa_Saida.setEnabled(False)
         self.ui.bt_Novo.setEnabled(False)
@@ -154,14 +154,11 @@ class SaidaController(QWidget):
         cabecalho_ativo = (f == FASE_CABECALHO)
         itens_ativo = (f == FASE_ITENS)
 
-        # cabeçalho
         self.ui.dt_Saida.setEnabled(cabecalho_ativo)
 
-        # bt_Abrir_Itens: ativo no cabeçalho e no finalizado (reabrir)
         self.ui.bt_Abrir_Itens.setEnabled(
             cabecalho_ativo or f == FASE_FINALIZADO)
 
-        # itens
         self.ui.txt_Cod_Prod.setEnabled(itens_ativo)
         self.ui.bt_Pesquisa_Itens.setEnabled(itens_ativo)
         self.ui.txt_Qtde.setEnabled(itens_ativo)
@@ -171,7 +168,6 @@ class SaidaController(QWidget):
         self.ui.bt_Excluir_Itens.setEnabled(itens_ativo)
         self.ui.bt_Sair_Itens.setEnabled(itens_ativo)
 
-        # salvar só no finalizado
         self._set_crud(
             salvar=(f == FASE_FINALIZADO),
             editar=False,
@@ -219,18 +215,15 @@ class SaidaController(QWidget):
         self.ui.dt_Saida.setFocus()
 
     def _abrir_itens(self):
-        """bt_Abrir_Itens: libera a inclusão de itens."""
         if self._fase not in (FASE_CABECALHO, FASE_FINALIZADO):
             return
         if self._modo not in (MODO_NOVO, MODO_EDICAO):
             return
-
         self._fase = FASE_ITENS
         self._aplicar_estado()
         self.ui.txt_Cod_Prod.setFocus()
 
     def _sair_itens(self):
-        """bt_Sair_Itens: finaliza a inclusão de itens e libera o Salvar."""
         if self._fase != FASE_ITENS:
             return
         self._fase = FASE_FINALIZADO
@@ -242,17 +235,14 @@ class SaidaController(QWidget):
         if not texto:
             self._pesquisar()
             return
-
         if self._service is None:
             QMessageBox.critical(
                 self, "Erro", "Service de saídas indisponível.")
             return
-
         if not texto.isdigit():
             QMessageBox.warning(
                 self, "Atenção", "A sequência é numérica.")
             return
-
         try:
             saida = self._service.buscar_por_sequencia(int(texto))
         except Exception as exc:
@@ -261,11 +251,9 @@ class SaidaController(QWidget):
                 self, "Erro",
                 f"Não foi possível buscar a saída:\n{self._mensagem_erro(exc)}")
             return
-
         if saida:
             self._preencher(saida)
             return
-
         resposta = QMessageBox.question(
             self, "Saída não encontrada",
             f"Nenhuma saída com a sequência '{texto}'.\n\n"
@@ -330,11 +318,9 @@ class SaidaController(QWidget):
                 f"Nenhum produto com o código '{codigo}'.")
 
     def _aplicar_insumo(self, produto):
-        """Aceita qualquer produto cadastrado como item da saída."""
         self._produto_selecionado = produto
         self.ui.txt_Cod_Prod.setText(produto.codigo)
         self.ui.txt_Descricao_Prod.setText(produto.descricao)
-        # custo sugerido: o cadastrado (editável)
         self.ui.txt_Custo.setText(f"{produto.custo:.4f}".replace(".", ","))
         self.ui.txt_Qtde.setFocus()
 
@@ -373,7 +359,6 @@ class SaidaController(QWidget):
             self.ui.txt_Custo.setFocus()
             return
 
-        # aviso de saldo (não bloqueia: histórico pode estar incompleto)
         saldo = self._saldo_atual(produto.id)
         if qtde > saldo:
             resposta = QMessageBox.question(
@@ -387,7 +372,6 @@ class SaidaController(QWidget):
             if resposta != QMessageBox.StandardButton.Yes:
                 return
 
-        # se o produto já existe na saída, atualiza qtde/custo
         for item in self._itens:
             if item.codigo_produto == produto.codigo:
                 item.quantidade = qtde
@@ -412,7 +396,6 @@ class SaidaController(QWidget):
         self.ui.txt_Cod_Prod.setFocus()
 
     def _saldo_atual(self, produto_id: int | None) -> float:
-        """Posição do produto no kardex (infinito se sem service)."""
         if produto_id is None or self._service is None:
             return float("inf")
         try:
@@ -446,6 +429,61 @@ class SaidaController(QWidget):
         self._itens.clear()
         self._atualizar_tabela()
 
+    # ---------------- mão de obra ----------------
+
+    def _ficha_por_produto(self, produto_id: int | None):
+        if produto_id is None or self._service is None:
+            return None
+        try:
+            return self._service.buscar_ficha_produto(produto_id)
+        except Exception:
+            logger.exception("Falha ao buscar ficha do produto")
+            return None
+
+    def _recalcular_mao_obra(self):
+        """Recomputa a mão de obra a partir dos itens acabados da saída.
+
+        A quantidade é proporcional à quantidade vendida: cada item da
+        ficha com mao_obra=true gera qtd = quantidade_kg * (vendida / sacos_batida).
+        """
+        self._mao_obra.clear()
+        self._modelo_mao.removeRows(0, self._modelo_mao.rowCount())
+        total_mao = 0.0
+        for item in self._itens:
+            ficha = self._ficha_por_produto(item.produto_id)
+            if ficha is None or ficha.sacos_batida <= 0:
+                continue
+            proporcao = item.quantidade / ficha.sacos_batida
+            for fi in ficha.itens:
+                if not fi.mao_obra or fi.produto_id is None:
+                    continue
+                qtd = round(fi.quantidade_kg * proporcao, 4)
+                custo = fi.custo
+                for mo in self._mao_obra:
+                    if mo.produto_id == fi.produto_id:
+                        mo.quantidade += qtd
+                        mo.custo = custo
+                        break
+                else:
+                    self._mao_obra.append(ItemSaidaMaoObra(
+                        produto_id=fi.produto_id,
+                        codigo_produto=fi.codigo_produto,
+                        descricao_produto=fi.descricao_produto or fi.codigo_produto,
+                        quantidade=qtd,
+                        custo=custo,
+                    ))
+        for mo in self._mao_obra:
+            total_mao += mo.total
+            self._modelo_mao.appendRow([
+                QStandardItem(mo.codigo_produto),
+                QStandardItem(mo.descricao_produto),
+                QStandardItem(f"{mo.quantidade:.4f}"),
+                QStandardItem(_moeda(mo.custo)),
+                QStandardItem(_moeda(mo.total)),
+            ])
+        self.ui.txt_Total_Mao_Obra.setText(_moeda(total_mao))
+        ajustar_larguras(self.ui.tb_Mao_Obra, coluna_stretch=1)
+
     def _atualizar_tabela(self):
         self._modelo.removeRows(0, self._modelo.rowCount())
         total = 0.0
@@ -460,6 +498,7 @@ class SaidaController(QWidget):
             ])
         self.ui.txt_Total_Itens.setText(_moeda(total))
         ajustar_larguras(self.ui.tb_Itens, coluna_stretch=1)
+        self._recalcular_mao_obra()
 
     # ---------------- salvar / excluir ----------------
 
@@ -475,6 +514,7 @@ class SaidaController(QWidget):
             id=self._saida_id,
             data_saida=self.ui.dt_Saida.date().toString("yyyy-MM-dd"),
             itens=list(self._itens),
+            mao_obra=list(self._mao_obra),
         )
 
     def _salvar(self):
@@ -548,7 +588,10 @@ class SaidaController(QWidget):
         self.ui.txt_Qtde.clear()
         self.ui.txt_Custo.clear()
         self.ui.txt_Total_Itens.clear()
+        self.ui.txt_Total_Mao_Obra.clear()
         self._itens.clear()
+        self._mao_obra.clear()
+        self._modelo_mao.removeRows(0, self._modelo_mao.rowCount())
         self._saida_id = None
         self._atualizar_tabela()
         self._modo = MODO_INICIAL
@@ -563,6 +606,7 @@ class SaidaController(QWidget):
         if data.isValid():
             self.ui.dt_Saida.setDate(data)
         self._itens = list(saida.itens)
+        self._mao_obra = list(saida.mao_obra)
         self._atualizar_tabela()
         self._modo = MODO_VISUALIZACAO
         self._fase = FASE_CABECALHO
