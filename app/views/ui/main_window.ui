@@ -173,6 +173,7 @@
     <addaction name="actionProdutos"/>
     <addaction name="actionMotivo_Entrada"/>
     <addaction name="actionFicha_Tecnica"/>
+    <addaction name="actionUnidadeMedida"/>
    </widget>
    <widget class="QMenu" name="menuLan_amentos">
     <property name="title">
@@ -231,6 +232,11 @@
   <action name="actionRel_Fichas_Tecnicas">
    <property name="text">
     <string>Fichas Tecnicas</string>
+   </property>
+  </action>
+  <action name="actionUnidadeMedida">
+   <property name="text">
+    <string>Unidade de Medida</string>
    </property>
   </action>
  </widget>

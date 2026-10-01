@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_windowuAuAvt.ui'
+## Form generated from reading UI file 'main_windowmiREZJ.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -47,6 +47,8 @@ class Ui_MainWindow(object):
         self.actionFichaKardexProduto.setObjectName(u"actionFichaKardexProduto")
         self.actionRel_Fichas_Tecnicas = QAction(MainWindow)
         self.actionRel_Fichas_Tecnicas.setObjectName(u"actionRel_Fichas_Tecnicas")
+        self.actionUnidadeMedida = QAction(MainWindow)
+        self.actionUnidadeMedida.setObjectName(u"actionUnidadeMedida")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -120,6 +122,7 @@ class Ui_MainWindow(object):
         self.menuCadastros.addAction(self.actionProdutos)
         self.menuCadastros.addAction(self.actionMotivo_Entrada)
         self.menuCadastros.addAction(self.actionFicha_Tecnica)
+        self.menuCadastros.addAction(self.actionUnidadeMedida)
         self.menuLan_amentos.addAction(self.actionEntrada)
         self.menuLan_amentos.addAction(self.actionSaida)
         self.menuRelatorios.addAction(self.actionEstoque)
@@ -141,6 +144,7 @@ class Ui_MainWindow(object):
         self.actionEstoque.setText(QCoreApplication.translate("MainWindow", u"Estoque", None))
         self.actionFichaKardexProduto.setText(QCoreApplication.translate("MainWindow", u"Ficha Kardex do Produto", None))
         self.actionRel_Fichas_Tecnicas.setText(QCoreApplication.translate("MainWindow", u"Fichas Tecnicas", None))
+        self.actionUnidadeMedida.setText(QCoreApplication.translate("MainWindow", u"Unidade de Medida", None))
         self.lb_Comandos.setText("")
         self.menuCadastros.setTitle(QCoreApplication.translate("MainWindow", u"Cadastros", None))
         self.menuLan_amentos.setTitle(QCoreApplication.translate("MainWindow", u"Lan\u00e7amentos", None))

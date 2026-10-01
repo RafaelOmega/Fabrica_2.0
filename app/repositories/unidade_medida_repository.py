@@ -48,8 +48,17 @@ class UnidadeMedidaRepository:
         return atualizado
 
     def excluir(self, codigo: str) -> bool:
+        """Exclui a unidade, bloqueando se estiver em uso por produtos."""
         with self._conn:
             with self._conn.cursor() as cur:
+                # proteção: unidade vinculada a produto não pode ser excluída
+                cur.execute(
+                    "SELECT 1 FROM produtos WHERE unidade = %s LIMIT 1",
+                    (codigo,),
+                )
+                if cur.fetchone():
+                    raise ValueError(
+                        "Unidade em uso por produtos — exclusão bloqueada.")
                 cur.execute(
                     "DELETE FROM unidades_medida WHERE codigo = %s",
                     (codigo,),
