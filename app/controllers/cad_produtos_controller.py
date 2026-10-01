@@ -78,7 +78,7 @@ class CadProdutosController(QWidget):
     # ---------------- unidades de medida ----------------
 
     def _carregar_unidades(self):
-        """Popula o combo de unidades (vazio se service indisponível)."""
+        """Popula o combo: exibe a descrição, guarda o código como valor."""
         self.ui.cmd_Unidade.clear()
         if self._service_unidade is None:
             return
@@ -88,7 +88,7 @@ class CadProdutosController(QWidget):
             logger.exception("Falha ao carregar unidades de medida")
             return
         for u in unidades:
-            self.ui.cmd_Unidade.addItem(u.codigo)
+            self.ui.cmd_Unidade.addItem(u.descricao, u.codigo)
 
     # ---------------- estados da tela ----------------
 
@@ -254,7 +254,7 @@ class CadProdutosController(QWidget):
     def _validar_obrigatorios(self) -> bool:
         codigo = self.ui.txt_Codigo.text().strip()
         descricao = self.ui.txt_Descricao.text().strip()
-        unidade = self.ui.cmd_Unidade.currentText().strip()
+        unidade = self.ui.cmd_Unidade.currentData()
 
         if not codigo:
             QMessageBox.warning(
@@ -363,7 +363,7 @@ class CadProdutosController(QWidget):
         return {
             "codigo": self.ui.txt_Codigo.text().strip(),
             "descricao": self.ui.txt_Descricao.text().strip(),
-            "unidade": self.ui.cmd_Unidade.currentText().strip(),
+            "unidade": self.ui.cmd_Unidade.currentData() or "",
             "peso": self.ui.txt_Peso.value(),
             "custo": self.ui.txt_Custo.value(),
             "mat_prima": self.ui.ch_Mat_Prima.isChecked(),
@@ -377,7 +377,8 @@ class CadProdutosController(QWidget):
         self._limpar_campos()
         self.ui.txt_Codigo.setText(produto.codigo)
         self.ui.txt_Descricao.setText(produto.descricao)
-        self.ui.cmd_Unidade.setCurrentText(produto.unidade)
+        indice = self.ui.cmd_Unidade.findData(produto.unidade)
+        self.ui.cmd_Unidade.setCurrentIndex(indice)
         self.ui.txt_Peso.setValue(produto.peso)
         self.ui.txt_Custo.setValue(produto.custo)
         self.ui.ch_Mat_Prima.setChecked(produto.mat_prima)

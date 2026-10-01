@@ -5,7 +5,7 @@ Schema:
   unidades_medida (id, codigo, descricao, fator_conversao)
 
 O código é automático: sequencial numérico gerado no INSERT
-(001, 002, ...), ignorando eventuais códigos não numéricos.
+(1, 2, 3, ...), ignorando eventuais códigos não numéricos.
 """
 from app.database import get_connection
 from app.models.unidade_medida import UnidadeMedida
@@ -15,10 +15,10 @@ logger = get_logger("unidade_medida_repository")
 
 _COLUNAS = "codigo, descricao, fator_conversao"
 
-# próximo código numérico existente + 1, formatado com 3 dígitos
+# próximo código numérico existente + 1 (sem zeros à esquerda)
 _PROXIMO_CODIGO = (
-    "LPAD((SELECT COALESCE(MAX(CAST(codigo AS INTEGER)), 0) + 1 "
-    "      FROM unidades_medida WHERE codigo ~ '^[0-9]+$')::TEXT, 3, '0')"
+    "(SELECT COALESCE(MAX(CAST(codigo AS INTEGER)), 0) + 1 "
+    "      FROM unidades_medida WHERE codigo ~ '^[0-9]+$')::TEXT"
 )
 
 
