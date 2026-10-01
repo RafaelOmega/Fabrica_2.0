@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'saidaPJRQCT.ui'
+## Form generated from reading UI file 'saidaBXUxZm.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -240,28 +240,91 @@ class Ui_Saida(object):
         self.gridLayout.setSpacing(5)
         self.gridLayout.setObjectName(u"gridLayout")
         self.gridLayout.setContentsMargins(5, 5, 5, 5)
-        self.lb_Total = QLabel(self.frm_Itens)
-        self.lb_Total.setObjectName(u"lb_Total")
-        self.lb_Total.setMinimumSize(QSize(0, 30))
-        self.lb_Total.setMaximumSize(QSize(16777215, 30))
+        self.frm_Totais = QFrame(self.frm_Itens)
+        self.frm_Totais.setObjectName(u"frm_Totais")
+        self.frm_Totais.setFrameShape(QFrame.Shape.StyledPanel)
+        self.frm_Totais.setFrameShadow(QFrame.Shadow.Raised)
+        self.horizontalLayout_5 = QHBoxLayout(self.frm_Totais)
+        self.horizontalLayout_5.setSpacing(5)
+        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
+        self.horizontalLayout_5.setContentsMargins(5, 5, 5, 5)
+        self.lb_Total_Itens = QLabel(self.frm_Totais)
+        self.lb_Total_Itens.setObjectName(u"lb_Total_Itens")
+        self.lb_Total_Itens.setMinimumSize(QSize(0, 30))
+        self.lb_Total_Itens.setMaximumSize(QSize(16777215, 30))
 
-        self.gridLayout.addWidget(self.lb_Total, 1, 1, 1, 1)
+        self.horizontalLayout_5.addWidget(self.lb_Total_Itens)
 
-        self.txt_Total_Itens = QLineEdit(self.frm_Itens)
+        self.txt_Total_Itens = QLineEdit(self.frm_Totais)
         self.txt_Total_Itens.setObjectName(u"txt_Total_Itens")
         self.txt_Total_Itens.setMinimumSize(QSize(150, 30))
         self.txt_Total_Itens.setMaximumSize(QSize(150, 30))
 
-        self.gridLayout.addWidget(self.txt_Total_Itens, 1, 2, 1, 1)
+        self.horizontalLayout_5.addWidget(self.txt_Total_Itens)
 
-        self.horizontalSpacer_5 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_5 = QSpacerItem(286, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.gridLayout.addItem(self.horizontalSpacer_5, 1, 0, 1, 1)
+        self.horizontalLayout_5.addItem(self.horizontalSpacer_5)
 
-        self.tb_Itens = QTableView(self.frm_Itens)
+        self.lb_Total_Mao_Obra = QLabel(self.frm_Totais)
+        self.lb_Total_Mao_Obra.setObjectName(u"lb_Total_Mao_Obra")
+        self.lb_Total_Mao_Obra.setMinimumSize(QSize(0, 30))
+        self.lb_Total_Mao_Obra.setMaximumSize(QSize(16777215, 30))
+
+        self.horizontalLayout_5.addWidget(self.lb_Total_Mao_Obra)
+
+        self.txt_Total_Mao_Obra = QLineEdit(self.frm_Totais)
+        self.txt_Total_Mao_Obra.setObjectName(u"txt_Total_Mao_Obra")
+        self.txt_Total_Mao_Obra.setMinimumSize(QSize(150, 30))
+        self.txt_Total_Mao_Obra.setMaximumSize(QSize(150, 30))
+
+        self.horizontalLayout_5.addWidget(self.txt_Total_Mao_Obra)
+
+
+        self.gridLayout.addWidget(self.frm_Totais, 1, 0, 1, 1)
+
+        self.frm_Tabelas = QFrame(self.frm_Itens)
+        self.frm_Tabelas.setObjectName(u"frm_Tabelas")
+        self.frm_Tabelas.setFrameShape(QFrame.Shape.StyledPanel)
+        self.frm_Tabelas.setFrameShadow(QFrame.Shadow.Raised)
+        self.horizontalLayout_6 = QHBoxLayout(self.frm_Tabelas)
+        self.horizontalLayout_6.setSpacing(5)
+        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
+        self.horizontalLayout_6.setContentsMargins(5, 5, 5, 5)
+        self.verticalLayout_2 = QVBoxLayout()
+        self.verticalLayout_2.setSpacing(0)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.lb_Itens = QLabel(self.frm_Tabelas)
+        self.lb_Itens.setObjectName(u"lb_Itens")
+
+        self.verticalLayout_2.addWidget(self.lb_Itens, 0, Qt.AlignmentFlag.AlignHCenter|Qt.AlignmentFlag.AlignVCenter)
+
+        self.tb_Itens = QTableView(self.frm_Tabelas)
         self.tb_Itens.setObjectName(u"tb_Itens")
 
-        self.gridLayout.addWidget(self.tb_Itens, 0, 0, 1, 3)
+        self.verticalLayout_2.addWidget(self.tb_Itens)
+
+
+        self.horizontalLayout_6.addLayout(self.verticalLayout_2)
+
+        self.verticalLayout_3 = QVBoxLayout()
+        self.verticalLayout_3.setSpacing(0)
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.lb_Mao_Obra = QLabel(self.frm_Tabelas)
+        self.lb_Mao_Obra.setObjectName(u"lb_Mao_Obra")
+
+        self.verticalLayout_3.addWidget(self.lb_Mao_Obra, 0, Qt.AlignmentFlag.AlignHCenter|Qt.AlignmentFlag.AlignVCenter)
+
+        self.tb_Mao_Obra = QTableView(self.frm_Tabelas)
+        self.tb_Mao_Obra.setObjectName(u"tb_Mao_Obra")
+
+        self.verticalLayout_3.addWidget(self.tb_Mao_Obra)
+
+
+        self.horizontalLayout_6.addLayout(self.verticalLayout_3)
+
+
+        self.gridLayout.addWidget(self.frm_Tabelas, 0, 0, 1, 1)
 
 
         self.verticalLayout.addWidget(self.frm_Itens)
@@ -325,9 +388,7 @@ class Ui_Saida(object):
         QWidget.setTabOrder(self.txt_Descricao_Prod, self.bt_Limpar_Itens)
         QWidget.setTabOrder(self.bt_Limpar_Itens, self.bt_Excluir_Itens)
         QWidget.setTabOrder(self.bt_Excluir_Itens, self.bt_Sair_Itens)
-        QWidget.setTabOrder(self.bt_Sair_Itens, self.txt_Total_Itens)
-        QWidget.setTabOrder(self.txt_Total_Itens, self.tb_Itens)
-        QWidget.setTabOrder(self.tb_Itens, self.bt_Salvar)
+        QWidget.setTabOrder(self.bt_Sair_Itens, self.bt_Salvar)
         QWidget.setTabOrder(self.bt_Salvar, self.bt_Editar)
         QWidget.setTabOrder(self.bt_Editar, self.bt_Limpar)
         QWidget.setTabOrder(self.bt_Limpar, self.bt_Excluir)
@@ -352,7 +413,10 @@ class Ui_Saida(object):
         self.bt_Limpar_Itens.setText(QCoreApplication.translate("Saida", u"Limpar", None))
         self.bt_Excluir_Itens.setText(QCoreApplication.translate("Saida", u"Excluir", None))
         self.bt_Sair_Itens.setText(QCoreApplication.translate("Saida", u"Sair Itens", None))
-        self.lb_Total.setText(QCoreApplication.translate("Saida", u"Total:", None))
+        self.lb_Total_Itens.setText(QCoreApplication.translate("Saida", u"Total:", None))
+        self.lb_Total_Mao_Obra.setText(QCoreApplication.translate("Saida", u"Total M\u00e3o de Obra:", None))
+        self.lb_Itens.setText(QCoreApplication.translate("Saida", u"Itens", None))
+        self.lb_Mao_Obra.setText(QCoreApplication.translate("Saida", u"M\u00e3o de Obra", None))
         self.bt_Salvar.setText(QCoreApplication.translate("Saida", u"Salvar", None))
         self.bt_Editar.setText(QCoreApplication.translate("Saida", u"Editar", None))
         self.bt_Limpar.setText(QCoreApplication.translate("Saida", u"Limpar", None))
