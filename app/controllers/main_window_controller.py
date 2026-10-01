@@ -20,6 +20,7 @@ from app.controllers.relatorio_kardex_controller import RelKardexController
 from app.controllers.relatorio_estoque_geral_controller import (
     RelEstoqueGeralController,
 )
+from app.controllers.relatorio_mao_obra_controller import RelMaoObraController
 
 from app.utils.logger import get_logger
 from app.views.ui_main_window import Ui_MainWindow
@@ -62,6 +63,7 @@ class MainWindowController(QMainWindow):
             lambda pai: RelFichaTecnicaController(pai))
         self._criadores["ficha_kardex"] = lambda pai: RelKardexController(pai)
         self._criadores["estoque"] = lambda pai: RelEstoqueGeralController(pai)
+        self._criadores["mao_obra"] = lambda pai: RelMaoObraController(pai)
 
         logger.info("Janela principal iniciada")
 
@@ -89,6 +91,7 @@ class MainWindowController(QMainWindow):
             "ficha_kardex":   (self.ui.actionFichaKardexProduto, "Ficha Kardex do Produto"),
             "rel_fichas_tecnicas": (
                 self.ui.actionRel_Fichas_Tecnicas, "Relatório de Fichas Técnicas"),
+            "mao_obra": (self.ui.actionMaoObra, "Relatório de Mão de Obra"),
         }
         for chave, (acao, _titulo) in self._telas.items():
             acao.triggered.connect(
