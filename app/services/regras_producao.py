@@ -21,9 +21,9 @@ def calcular_baixa(ficha: FichaTecnica,
                    sacos_produzidos: float) -> list[BaixaInsumo]:
     """Baixa de cada insumo, proporcional a sacos_batida.
 
-    proporcao = sacos_produzidos / sacos_batida
-    kg_baixa  = quantidade_kg_da_ficha * proporcao       (4 casas)
-    sacos     = kg_baixa / fator_conversao_kg_saco        (4 casas)
+    Só gera baixa para insumos que controlam estoque (controla_estoque
+    true). Itens como mão de obra (controla_estoque false) entram no
+    custo mas não movimentam estoque.
     """
     if ficha is None or ficha.sacos_batida <= 0:
         raise ValueError("Ficha técnica inválida para produção.")
@@ -32,11 +32,10 @@ def calcular_baixa(ficha: FichaTecnica,
     proporcao = sacos_produzidos / ficha.sacos_batida
     baixas = []
     for item in ficha.itens:
-        if item.produto_id is None:
+        if item.produto_id is None or not item.controla_estoque:
             continue
         kg_baixa = round(item.quantidade_kg * proporcao, 4)
         fator = item.fator_conversao_kg_saco
-        # converte p/ sacos; sem fator cadastrado, mantém kg (fallback)
         sacos = (round(kg_baixa / fator, 4)
                  if fator and fator > 0 else kg_baixa)
         baixas.append(BaixaInsumo(

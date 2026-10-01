@@ -148,12 +148,21 @@ class FichaTecnicaRepository:
 
     @staticmethod
     def _buscar_itens(cur, ficha_id: int) -> list[ItemFichaTecnica]:
-        cur.execute(_SELECT_ITENS, (ficha_id,))
+        cur.execute(
+            """
+            SELECT i.id, i.ficha_id, i.produto_id, i.codigo_produto,
+                   i.quantidade_kg, COALESCE(p.controla_estoque, true)
+              FROM itens_ficha_tecnica i
+              LEFT JOIN produtos p ON p.id = i.produto_id
+             WHERE i.ficha_id = %s ORDER BY i.id
+            """,
+            (ficha_id,),
+        )
         return [
             ItemFichaTecnica(
                 id=l[0], ficha_id=l[1], produto_id=l[2],
                 codigo_produto=l[3], quantidade_kg=float(l[4]),
-                fator_conversao_kg_saco=float(l[5] or 0),
+                controla_estoque=bool(l[5]),
             )
             for l in cur.fetchall()
         ]

@@ -9,6 +9,7 @@ class ItemFichaTecnica:
     codigo_produto: str = ""
     quantidade_kg: float = 0.0
     fator_conversao_kg_saco: float = 0.0  # kg por saco (uni. de medida)
+    controla_estoque: bool = True         # só baixa insumo que controla estoque
     ficha_id: int | None = None
     id: int | None = None
 
@@ -20,6 +21,7 @@ class ItemFichaTecnica:
             quantidade_kg=float(dados.get("quantidade_kg", 0.0) or 0.0),
             fator_conversao_kg_saco=float(
                 dados.get("fator_conversao_kg_saco", 0.0) or 0.0),
+            controla_estoque=bool(dados.get("controla_estoque", True)),
             ficha_id=dados.get("ficha_id"),
             id=dados.get("id"),
         )
