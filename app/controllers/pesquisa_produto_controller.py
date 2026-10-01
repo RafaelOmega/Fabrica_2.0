@@ -20,8 +20,9 @@ except ImportError:
 
 logger = get_logger("pesquisa_produto")
 
-COLUNAS = ["Código", "Descrição", "Matéria Prima", "Prod. Acabado",
-           "Mão de Obra", "Peso (Kg)", "Custo (R$)", "Ctrl. Estoque"]
+COLUNAS = ["Código", "Descrição", "Unidade", "Matéria Prima",
+           "Prod. Acabado", "Mão de Obra", "Peso (Kg)", "Custo (R$)",
+           "Ctrl. Estoque"]
 
 # Índice da coluna que recebe a folga horizontal (Descrição)
 COLUNA_STRETCH = 1
@@ -95,6 +96,7 @@ class PesquisaProdutoController(QDialog):
             linha = [
                 produto.codigo,
                 produto.descricao,
+                produto.unidade_descricao,
                 "Sim" if produto.mat_prima else "",
                 "Sim" if produto.prod_acabado else "",
                 "Sim" if produto.mao_obra else "",

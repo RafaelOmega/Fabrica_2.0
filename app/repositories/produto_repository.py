@@ -12,6 +12,15 @@ _COLUNAS = (
     "mat_prima, prod_acabado, mao_obra, controla_estoque, embalagem"
 )
 
+# SELECT base com JOIN: traz a descrição da unidade pronta (sem N+1)
+_SELECT_BASE = (
+    "SELECT p.id, p.codigo, p.descricao, p.unidade, p.peso, p.custo, "
+    "p.mat_prima, p.prod_acabado, p.mao_obra, p.controla_estoque, "
+    "p.embalagem, um.descricao AS unidade_descricao "
+    "FROM produtos p "
+    "LEFT JOIN unidades_medida um ON um.codigo = p.unidade"
+)
+
 
 class ProdutoRepository:
 
@@ -66,7 +75,7 @@ class ProdutoRepository:
         with self._conn:
             with self._conn.cursor() as cur:
                 cur.execute(
-                    f"SELECT id, {_COLUNAS} FROM produtos WHERE codigo = %s",
+                    f"{_SELECT_BASE} WHERE p.codigo = %s",
                     (codigo,),
                 )
                 linha = cur.fetchone()
@@ -78,9 +87,9 @@ class ProdutoRepository:
             with self._conn.cursor() as cur:
                 cur.execute(
                     f"""
-                    SELECT id, {_COLUNAS} FROM produtos
-                     WHERE codigo ILIKE %s OR descricao ILIKE %s
-                     ORDER BY codigo
+                    {_SELECT_BASE}
+                     WHERE p.codigo ILIKE %s OR p.descricao ILIKE %s
+                     ORDER BY p.codigo
                     """,
                     (termo, termo),
                 )
@@ -94,6 +103,7 @@ class ProdutoRepository:
         return Produto(
             id=linha[0],
             codigo=linha[1], descricao=linha[2], unidade=linha[3] or "",
+            unidade_descricao=linha[11] or "",
             peso=linha[4], custo=linha[5], mat_prima=linha[6],
             prod_acabado=linha[7], mao_obra=linha[8],
             controla_estoque=linha[9], embalagem=linha[10],

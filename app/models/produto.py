@@ -8,6 +8,7 @@ class Produto:
     codigo: str
     descricao: str
     unidade: str = ""  # código da unidade de medida (FK unidades_medida)
+    unidade_descricao: str = ""  # apenas exibição (vem do JOIN com unidades)
     peso: float = 0.0
     custo: float = 0.0
     mat_prima: bool = False
@@ -23,6 +24,7 @@ class Produto:
             codigo=str(dados.get("codigo", "")),
             descricao=str(dados.get("descricao", "")),
             unidade=str(dados.get("unidade", "")),
+            unidade_descricao=str(dados.get("unidade_descricao", "")),
             peso=float(dados.get("peso", 0.0) or 0.0),
             custo=float(dados.get("custo", 0.0) or 0.0),
             mat_prima=bool(dados.get("mat_prima", False)),
