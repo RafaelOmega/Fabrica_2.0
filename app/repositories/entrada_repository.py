@@ -154,8 +154,8 @@ class EntradaRepository:
 
         Entradas dos itens viram tipo 'E'; as baixas de produção
         (insumos consumidos pela ficha técnica) viram tipo 'S'
-        vinculadas ao entrada_id — assim atualizar/excluir já as
-        regravam/apagam junto.
+        vinculadas ao entrada_id, com a quantidade já convertida
+        para sacos.
         """
         cur.execute(
             "SELECT descricao FROM motivos_entrada WHERE id = %s",
@@ -200,7 +200,10 @@ class EntradaRepository:
                  date.fromisoformat(entrada.data_entrada),
                  str(entrada.sequencia),
                  f"Baixa produção - {historico}",
-                 baixa.quantidade_kg, custo_insumo, entrada.id),
+                 # quantidade convertida para sacos
+                 baixa.quantidade_sacos if baixa.quantidade_sacos else
+                 baixa.quantidade_kg,
+                 custo_insumo, entrada.id),
             )
 
     # ---------------- leitura ----------------

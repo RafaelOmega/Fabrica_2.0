@@ -5,8 +5,20 @@ from app.models.ficha_tecnica import FichaTecnica, ItemFichaTecnica
 from app.utils.logger import get_logger
 
 logger = get_logger("ficha_tecnica_repository")
+
 _COLUNAS_FICHA = "produto_id, codigo_produto, sacos_batida"
 _COLUNAS_ITEM = "ficha_id, produto_id, codigo_produto, quantidade_kg"
+
+# itens com o fator de conversão do insumo (kg por saco): UNIDADE -> produto
+_SELECT_ITENS = (
+    "SELECT i.id, i.ficha_id, i.produto_id, i.codigo_produto, "
+    "       i.quantidade_kg, "
+    "       COALESCE(um.fator_conversao, 0) AS fator_kg_saco "
+    "  FROM itens_ficha_tecnica i "
+    "  LEFT JOIN produtos p ON p.id = i.produto_id "
+    "  LEFT JOIN unidades_medida um ON um.codigo = p.unidade "
+    " WHERE i.ficha_id = %s ORDER BY i.id"
+)
 
 
 class FichaTecnicaRepository:
@@ -140,15 +152,12 @@ class FichaTecnicaRepository:
 
     @staticmethod
     def _buscar_itens(cur, ficha_id: int) -> list[ItemFichaTecnica]:
-        cur.execute(
-            f"SELECT id, {_COLUNAS_ITEM} "
-            "FROM itens_ficha_tecnica WHERE ficha_id = %s ORDER BY id",
-            (ficha_id,),
-        )
+        cur.execute(_SELECT_ITENS, (ficha_id,))
         return [
             ItemFichaTecnica(
                 id=l[0], ficha_id=l[1], produto_id=l[2],
                 codigo_produto=l[3], quantidade_kg=float(l[4]),
+                fator_conversao_kg_saco=float(l[5] or 0),
             )
             for l in cur.fetchall()
         ]

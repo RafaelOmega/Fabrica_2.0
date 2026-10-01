@@ -8,6 +8,7 @@ class ItemFichaTecnica:
     produto_id: int | None = None
     codigo_produto: str = ""
     quantidade_kg: float = 0.0
+    fator_conversao_kg_saco: float = 0.0  # kg por saco (uni. de medida)
     ficha_id: int | None = None
     id: int | None = None
 
@@ -17,6 +18,8 @@ class ItemFichaTecnica:
             produto_id=dados.get("produto_id"),
             codigo_produto=str(dados.get("codigo_produto", "")),
             quantidade_kg=float(dados.get("quantidade_kg", 0.0) or 0.0),
+            fator_conversao_kg_saco=float(
+                dados.get("fator_conversao_kg_saco", 0.0) or 0.0),
             ficha_id=dados.get("ficha_id"),
             id=dados.get("id"),
         )

@@ -39,7 +39,9 @@ class BaixaInsumo:
     produto_id: int | None = None
     codigo_produto: str = ""
     descricao_produto: str = ""
-    quantidade_kg: float = 0.0
+    quantidade_kg: float = 0.0     # kg consumidos (base do cálculo de custo)
+    quantidade_sacos: float = 0.0  # convertido p/ sacos (gravado no kardex)
+    fator_conversao: float = 0.0   # kg por saco (da unidade de medida)
 
     @classmethod
     def from_dict(cls, dados: dict) -> "BaixaInsumo":
@@ -48,6 +50,9 @@ class BaixaInsumo:
             codigo_produto=str(dados.get("codigo_produto", "")),
             descricao_produto=str(dados.get("descricao_produto", "")),
             quantidade_kg=float(dados.get("quantidade_kg", 0.0) or 0.0),
+            quantidade_sacos=float(
+                dados.get("quantidade_sacos", 0.0) or 0.0),
+            fator_conversao=float(dados.get("fator_conversao", 0.0) or 0.0),
         )
 
     def to_dict(self) -> dict:
