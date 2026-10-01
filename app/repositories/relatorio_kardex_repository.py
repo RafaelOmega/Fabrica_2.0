@@ -2,11 +2,11 @@
 """Repositório do relatório de kardex (PostgreSQL).
 
 Fonte: tabela movimentos_kardex (espelho dos movimentos).
-Entradas gravam tipo 'E' em kg; as baixas de produção ('S') já entram
-em sacos. Para somar tudo na mesma unidade, este repositório converte
-as entradas para sacos usando o fator_conversao da unidade de medida
-do produto (kg por saco). Se o produto não tiver unidade cadastrada,
-mantém kg como fallback (fator = 1).
+As quantidades já são gravadas na unidade correta no kardex:
+  - Entrada (tipo 'E'): kg de compra / como lançada
+  - Baixa de produção (tipo 'S'): sacos (convertido pela ficha técnica)
+Este repositório apenas lê os valores como foram gravados, sem
+conversão. A unidade do produto (ex.: saco) é exibida para referência.
 """
 from datetime import date
 
@@ -26,7 +26,7 @@ class RelatorioKardexRepository:
 
     def kardex(self, filtro: str, data_inicial: date,
                data_final: date) -> list[KardexProduto]:
-        """Kardex por produto no período (valores em sacos).
+        """Kardex por produto no período (valores como gravados).
 
         Filtro vazio: todos os produtos com movimentação no período.
         Filtro preenchido: o produto pelo código ou descrição (mesmo
@@ -38,20 +38,13 @@ class RelatorioKardexRepository:
             with self._conn.cursor() as cur:
                 for produto in produtos:
                     produto.saldo_inicial = self._saldo_inicial(
-                        cur, produto, data_inicial)
+                        cur, produto.produto_id, data_inicial)
                     produto.movimentos = self._movimentos(
-                        cur, produto, data_inicial, data_final)
+                        cur, produto.produto_id, data_inicial, data_final)
         logger.info("Kardex: %s produto(s) no período", len(produtos))
         return produtos
 
     # ---------------- auxiliares ----------------
-
-    @staticmethod
-    def _converte_kg_para_sacos(kg: float, fator: float) -> float:
-        """kg -> sacos. Sem fator válido, mantém kg (fallback fator=1)."""
-        if fator and fator > 0:
-            return kg / fator
-        return kg
 
     @staticmethod
     def _produtos_do_relatorio(filtro: str, data_inicial: date,
@@ -63,8 +56,7 @@ class RelatorioKardexRepository:
                     cur.execute(
                         """
                         SELECT p.id, p.codigo, p.descricao,
-                               COALESCE(um.descricao, 'kg'),
-                               COALESCE(um.fator_conversao, 0)
+                               COALESCE(um.descricao, 'kg')
                           FROM produtos p
                           LEFT JOIN unidades_medida um
                             ON um.codigo = p.unidade
@@ -77,8 +69,7 @@ class RelatorioKardexRepository:
                     cur.execute(
                         """
                         SELECT DISTINCT p.id, p.codigo, p.descricao,
-                               COALESCE(um.descricao, 'kg'),
-                               COALESCE(um.fator_conversao, 0)
+                               COALESCE(um.descricao, 'kg')
                           FROM produtos p
                           JOIN movimentos_kardex mk
                             ON mk.produto_id = p.id
@@ -94,38 +85,28 @@ class RelatorioKardexRepository:
                         produto_id=l[0], codigo=l[1],
                         descricao=l[2] or "",
                         unidade=l[3] or "kg",
-                        fator_kg_saco=float(l[4] or 0) or 1.0,
                     )
                     for l in cur.fetchall()
                 ]
 
     @staticmethod
-    def _saldo_inicial(cur, produto: KardexProduto,
-                       data_inicial: date) -> float:
-        """Movimentos anteriores à data inicial, tudo convertido a sacos.
-
-        Entradas antigas (kg) são divididas pelo fator; as saídas
-        ('S') já estão em sacos.
-        """
+    def _saldo_inicial(cur, produto_id: int, data_inicial: date) -> float:
+        """Movimentos anteriores à data inicial (entradas - saídas)."""
         cur.execute(
             """
-            SELECT COALESCE(SUM(CASE WHEN tipo = 'E' THEN quantidade
-                                     ELSE 0 END), 0),
-                   COALESCE(SUM(CASE WHEN tipo = 'S' THEN quantidade
-                                     ELSE 0 END), 0)
+            SELECT COALESCE(SUM(
+                       CASE WHEN tipo = 'E' THEN quantidade
+                            ELSE -quantidade END), 0)
               FROM movimentos_kardex
-             WHERE produto_id = %s AND data_movimento < %s
+             WHERE produto_id = %s
+               AND data_movimento < %s
             """,
-            (produto.produto_id, data_inicial),
+            (produto_id, data_inicial),
         )
-        entradas_kg, saidas_sacos = cur.fetchone()
-        fator = produto.fator_kg_saco
-        entradas_sacos = (float(entradas_kg) / fator
-                          if fator and fator > 0 else 0.0)
-        return entradas_sacos - float(saidas_sacos or 0.0)
+        return float(cur.fetchone()[0])
 
     @staticmethod
-    def _movimentos(cur, produto: KardexProduto, data_inicial: date,
+    def _movimentos(cur, produto_id: int, data_inicial: date,
                     data_final: date) -> list[MovimentoKardex]:
         cur.execute(
             """
@@ -136,24 +117,17 @@ class RelatorioKardexRepository:
                AND data_movimento BETWEEN %s AND %s
              ORDER BY data_movimento, id
             """,
-            (produto.produto_id, data_inicial, data_final),
+            (produto_id, data_inicial, data_final),
         )
-        fator = produto.fator_kg_saco
-        movimentos = []
-        for l in cur.fetchall():
-            tipo = TIPO_ENTRADA if l[3] == TIPO_ENTRADA else TIPO_SAIDA
-            quantidade = float(l[4])
-            # entradas gravam kg -> converte para sacos; saídas já em sacos
-            if tipo == TIPO_ENTRADA:
-                quantidade = (quantidade / fator
-                              if fator and fator > 0 else quantidade)
-            movimentos.append(MovimentoKardex(
+        return [
+            MovimentoKardex(
                 data=l[0].isoformat() if hasattr(l[0], "isoformat")
                 else str(l[0]),
                 documento=l[1] or "",
                 historico=l[2] or "",
-                tipo=tipo,
-                quantidade=quantidade,
+                tipo=TIPO_ENTRADA if l[3] == TIPO_ENTRADA else TIPO_SAIDA,
+                quantidade=float(l[4]),
                 custo_unitario=float(l[5]) if l[5] is not None else None,
-            ))
-        return movimentos
+            )
+            for l in cur.fetchall()
+        ]

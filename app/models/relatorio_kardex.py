@@ -12,7 +12,7 @@ class MovimentoKardex:
     documento: str            # sequência da entrada (futuro: doc da saída)
     historico: str            # motivo (futuro: cliente/observação da saída)
     tipo: str = TIPO_ENTRADA  # "E" = entrada | "S" = saída
-    quantidade: float = 0.0   # em sacos (entrada já convertida kg → sacos)
+    quantidade: float = 0.0   # como gravado no kardex (E em kg, S em sacos)
     custo_unitario: float | None = None  # custo de aquisição do movimento
     saldo: float = 0.0        # acumulado (preenchido pelo service)
 

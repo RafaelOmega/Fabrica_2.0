@@ -27,6 +27,8 @@ class RelKardexController(QWidget):
         self.ui.setupUi(self)
 
         self._service = RelatorioKardexService()
+        self._produto_id = None
+        self._produto_codigo = None
 
         # padrão: mês corrente
         hoje = QDate.currentDate()
@@ -35,19 +37,29 @@ class RelKardexController(QWidget):
 
         self.ui.bt_Pesquisar_Produtos.clicked.connect(self._pesquisar_produto)
         self.ui.bt_Filtrar.clicked.connect(self._gerar_relatorio)
+        self.ui.txt_Produto.textChanged.connect(self._ao_mudar_produto)
 
-    # ---------------- filtros ----------------
+    # ---------------- produto ----------------
+
+    def _ao_mudar_produto(self):
+        """Limpar o campo manualmente cancela o filtro de produto."""
+        if not self.ui.txt_Produto.text().strip():
+            self._produto_id = None
+            self._produto_codigo = None
 
     def _pesquisar_produto(self):
-        """Abre a pesquisa de produtos e copia o código para o filtro."""
+        """Abre a pesquisa e traz o produto para a tela (código - descrição)."""
         from app.controllers.pesquisa_produto_controller import (
             PesquisaProdutoController,
         )
         dialogo = PesquisaProdutoController(self)
-        if dialogo.exec():
+        if dialogo.exec() == dialogo.DialogCode.Accepted:
             produto = dialogo.produto_selecionado()
             if produto:
-                self.ui.txt_Produto.setText(produto.codigo)
+                self._produto_id = produto.id
+                self._produto_codigo = produto.codigo
+                self.ui.txt_Produto.setText(
+                    f"{produto.codigo} - {produto.descricao}")
 
     # ---------------- geração ----------------
 
@@ -61,7 +73,8 @@ class RelKardexController(QWidget):
                 self, "Atenção", "Data inicial maior que a data final.")
             return
 
-        filtro = self.ui.txt_Produto.text().strip()
+        # usa o produto selecionado, senão o texto digitado manualmente
+        filtro = self._produto_codigo or self.ui.txt_Produto.text().strip()
         try:
             kardex_list = self._service.kardex(
                 filtro, data_inicial, data_final)
