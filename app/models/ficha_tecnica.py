@@ -32,7 +32,7 @@ class ItemFichaTecnica:
 class FichaTecnica:
     produto_id: int | None = None
     codigo_produto: str = ""
-    descricao_produto: str = ""  # descrição do produto acabado (JOIN produtos)
+    descricao_produto: str = ""
     sacos_batida: float = 0.0
     id: int | None = None
     itens: list[ItemFichaTecnica] = field(default_factory=list)

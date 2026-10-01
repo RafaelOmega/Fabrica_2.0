@@ -6,8 +6,8 @@ from dataclasses import asdict, dataclass, field
 @dataclass
 class ItemEntrada:
     produto_id: int | None = None
-    codigo_produto: str = ""  # apenas exibição (vem do JOIN com produtos)
-    descricao_produto: str = ""  # apenas exibição (vem do JOIN com produtos)
+    codigo_produto: str = ""
+    descricao_produto: str = ""
     quantidade: float = 0.0
     custo: float = 0.0
     entrada_id: int | None = None
@@ -62,11 +62,11 @@ class BaixaInsumo:
 @dataclass
 class Entrada:
     motivo_id: int | None = None
-    motivo_codigo: str = ""      # exibição (JOIN com motivos)
-    motivo_descricao: str = ""   # exibição (JOIN com motivos)
-    data_entrada: str = ""  # ISO AAAA-MM-DD
+    motivo_codigo: str = ""
+    motivo_descricao: str = ""
+    data_entrada: str = ""
     sequencia: int | None = None
-    total_sql: float = 0.0       # total vindo da pesquisa (soma no SQL)
+    total_sql: float = 0.0
     id: int | None = None
     itens: list[ItemEntrada] = field(default_factory=list)
     baixas: list[BaixaInsumo] = field(default_factory=list)

@@ -62,7 +62,6 @@ class FichaTecnicaRepository:
                     (ficha.produto_id, ficha.codigo_produto,
                      ficha.sacos_batida, ficha.id),
                 )
-                # itens: regrava a lista completa
                 cur.execute(
                     "DELETE FROM itens_ficha_tecnica WHERE ficha_id = %s",
                     (ficha.id,),
@@ -124,10 +123,7 @@ class FichaTecnicaRepository:
         return ficha
 
     def pesquisar(self, filtro: str = "") -> list[FichaTecnica]:
-        """Fichas com a descrição do produto acabado (JOIN produtos).
-
-        Busca por código do produto, descrição ou ID da ficha.
-        """
+        """Fichas com a descrição do produto acabado (JOIN produtos)."""
         termo = f"%{filtro}%"
         with self._conn:
             with self._conn.cursor() as cur:
