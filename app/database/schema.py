@@ -166,6 +166,21 @@ _COMANDOS = (
         fator_conversao NUMERIC(12,4) NOT NULL DEFAULT 0
     )
     """,
+    # ---------------- vínculo produto x unidade ----------------
+    """
+    DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'produtos' AND column_name = 'unidade'
+        ) THEN
+            ALTER TABLE produtos ADD COLUMN unidade VARCHAR(20);
+            ALTER TABLE produtos
+                ADD CONSTRAINT fk_produto_unidade
+                FOREIGN KEY (unidade) REFERENCES unidades_medida(codigo);
+        END IF;
+    END $$
+    """,
 )
 
 # Backfill idempotente: espelha entradas lançadas antes da tabela existir.

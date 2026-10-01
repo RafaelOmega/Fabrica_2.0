@@ -8,7 +8,7 @@ logger = get_logger("produto_repository")
 
 # Colunas para INSERT/UPDATE (id é auto-gerado pelo banco)
 _COLUNAS = (
-    "codigo, descricao, peso, custo, "
+    "codigo, descricao, unidade, peso, custo, "
     "mat_prima, prod_acabado, mao_obra, controla_estoque, embalagem"
 )
 
@@ -23,10 +23,10 @@ class ProdutoRepository:
             with self._conn.cursor() as cur:
                 cur.execute(
                     f"INSERT INTO produtos ({_COLUNAS}) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
                     "RETURNING id",
-                    (produto.codigo, produto.descricao, produto.peso,
-                     produto.custo, produto.mat_prima,
+                    (produto.codigo, produto.descricao, produto.unidade,
+                     produto.peso, produto.custo, produto.mat_prima,
                      produto.prod_acabado, produto.mao_obra,
                      produto.controla_estoque, produto.embalagem),
                 )
@@ -40,14 +40,14 @@ class ProdutoRepository:
                 cur.execute(
                     """
                     UPDATE produtos
-                       SET descricao = %s, peso = %s, custo = %s,
+                       SET descricao = %s, unidade = %s, peso = %s, custo = %s,
                            mat_prima = %s, prod_acabado = %s,
                            mao_obra = %s, controla_estoque = %s,
                            embalagem = %s
                      WHERE codigo = %s
                     """,
-                    (produto.descricao, produto.peso, produto.custo,
-                     produto.mat_prima, produto.prod_acabado,
+                    (produto.descricao, produto.unidade, produto.peso,
+                     produto.custo, produto.mat_prima, produto.prod_acabado,
                      produto.mao_obra, produto.controla_estoque,
                      produto.embalagem, produto.codigo),
                 )
@@ -93,8 +93,8 @@ class ProdutoRepository:
             return None
         return Produto(
             id=linha[0],
-            codigo=linha[1], descricao=linha[2], peso=linha[3],
-            custo=linha[4], mat_prima=linha[5],
-            prod_acabado=linha[6], mao_obra=linha[7],
-            controla_estoque=linha[8], embalagem=linha[9],
+            codigo=linha[1], descricao=linha[2], unidade=linha[3] or "",
+            peso=linha[4], custo=linha[5], mat_prima=linha[6],
+            prod_acabado=linha[7], mao_obra=linha[8],
+            controla_estoque=linha[9], embalagem=linha[10],
         )

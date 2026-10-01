@@ -38,6 +38,19 @@ class CadProdutosController(QWidget):
             logger.warning(
                 "ProdutoService nao encontrado - acoes de dados desativadas")
 
+        try:
+            from app.services.unidade_medida_service import (
+                UnidadeMedidaService,
+            )
+            self._service_unidade = (
+                UnidadeMedidaService() if UnidadeMedidaService else None)
+        except ImportError:
+            self._service_unidade = None
+        if self._service_unidade is None:
+            logger.warning(
+                "UnidadeMedidaService nao encontrado - combo vazio")
+        self._carregar_unidades()
+
         self._modo = ESTADO_INICIAL
         self._codigo_original = None
 
@@ -62,6 +75,21 @@ class CadProdutosController(QWidget):
         self._at_f2 = QShortcut(QKeySequence(Qt.Key.Key_F2), self)
         self._at_f2.activated.connect(self._novo)
 
+    # ---------------- unidades de medida ----------------
+
+    def _carregar_unidades(self):
+        """Popula o combo de unidades (vazio se service indisponível)."""
+        self.ui.cmd_Unidade.clear()
+        if self._service_unidade is None:
+            return
+        try:
+            unidades = self._service_unidade.pesquisar()
+        except Exception:
+            logger.exception("Falha ao carregar unidades de medida")
+            return
+        for u in unidades:
+            self.ui.cmd_Unidade.addItem(u.codigo)
+
     # ---------------- estados da tela ----------------
 
     def _estado_inicial(self):
@@ -71,6 +99,7 @@ class CadProdutosController(QWidget):
         self.ui.bt_Novo.setEnabled(True)
 
         self.ui.txt_Descricao.setEnabled(False)
+        self.ui.cmd_Unidade.setEnabled(False)
         self.ui.txt_Peso.setEnabled(False)
         self.ui.txt_Custo.setEnabled(False)
         self.ui.ch_Mat_Prima.setEnabled(False)
@@ -87,6 +116,7 @@ class CadProdutosController(QWidget):
         """Novo registro: formulário liberado; Editar/Excluir bloqueados."""
         self.ui.txt_Codigo.setEnabled(True)
         self.ui.txt_Descricao.setEnabled(True)
+        self.ui.cmd_Unidade.setEnabled(True)
         self.ui.txt_Peso.setEnabled(True)
         self.ui.txt_Custo.setEnabled(True)
         self.ui.ch_Mat_Prima.setEnabled(True)
@@ -105,6 +135,7 @@ class CadProdutosController(QWidget):
         """Produto carregado: Editar, Limpar e Excluir ativos."""
         self.ui.txt_Codigo.setEnabled(False)
         self.ui.txt_Descricao.setEnabled(False)
+        self.ui.cmd_Unidade.setEnabled(False)
         self.ui.txt_Peso.setEnabled(False)
         self.ui.txt_Custo.setEnabled(False)
         self.ui.ch_Mat_Prima.setEnabled(False)
@@ -123,6 +154,7 @@ class CadProdutosController(QWidget):
         """Edição: código travado (chave), campos liberados."""
         self.ui.txt_Codigo.setEnabled(False)
         self.ui.txt_Descricao.setEnabled(True)
+        self.ui.cmd_Unidade.setEnabled(True)
         self.ui.txt_Peso.setEnabled(True)
         self.ui.txt_Custo.setEnabled(True)
         self.ui.ch_Mat_Prima.setEnabled(True)
@@ -222,6 +254,7 @@ class CadProdutosController(QWidget):
     def _validar_obrigatorios(self) -> bool:
         codigo = self.ui.txt_Codigo.text().strip()
         descricao = self.ui.txt_Descricao.text().strip()
+        unidade = self.ui.cmd_Unidade.currentText().strip()
 
         if not codigo:
             QMessageBox.warning(
@@ -233,6 +266,12 @@ class CadProdutosController(QWidget):
             QMessageBox.warning(
                 self, "Atenção", "Informe a descrição do produto.")
             self.ui.txt_Descricao.setFocus()
+            return False
+
+        if not unidade:
+            QMessageBox.warning(
+                self, "Atenção", "Informe a unidade de medida do produto.")
+            self.ui.cmd_Unidade.setFocus()
             return False
 
         return True
@@ -308,6 +347,7 @@ class CadProdutosController(QWidget):
     def _limpar_campos(self):
         self.ui.txt_Codigo.clear()
         self.ui.txt_Descricao.clear()
+        self.ui.cmd_Unidade.setCurrentIndex(-1)
         self.ui.txt_Peso.setValue(0.0)
         self.ui.txt_Custo.setValue(0.0)
         self.ui.ch_Mat_Prima.setChecked(False)
@@ -323,6 +363,7 @@ class CadProdutosController(QWidget):
         return {
             "codigo": self.ui.txt_Codigo.text().strip(),
             "descricao": self.ui.txt_Descricao.text().strip(),
+            "unidade": self.ui.cmd_Unidade.currentText().strip(),
             "peso": self.ui.txt_Peso.value(),
             "custo": self.ui.txt_Custo.value(),
             "mat_prima": self.ui.ch_Mat_Prima.isChecked(),
@@ -336,6 +377,7 @@ class CadProdutosController(QWidget):
         self._limpar_campos()
         self.ui.txt_Codigo.setText(produto.codigo)
         self.ui.txt_Descricao.setText(produto.descricao)
+        self.ui.cmd_Unidade.setCurrentText(produto.unidade)
         self.ui.txt_Peso.setValue(produto.peso)
         self.ui.txt_Custo.setValue(produto.custo)
         self.ui.ch_Mat_Prima.setChecked(produto.mat_prima)
