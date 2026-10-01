@@ -12,7 +12,7 @@ class MovimentoKardex:
     documento: str            # sequência da entrada (futuro: doc da saída)
     historico: str            # motivo (futuro: cliente/observação da saída)
     tipo: str = TIPO_ENTRADA  # "E" = entrada | "S" = saída
-    quantidade: float = 0.0   # kg
+    quantidade: float = 0.0   # em sacos (entrada já convertida kg → sacos)
     custo_unitario: float | None = None  # custo de aquisição do movimento
     saldo: float = 0.0        # acumulado (preenchido pelo service)
 
@@ -30,7 +30,9 @@ class KardexProduto:
     produto_id: int | None = None
     codigo: str = ""
     descricao: str = ""
-    saldo_inicial: float = 0.0
+    unidade: str = "kg"        # unidade de medida do produto (ex: "saco")
+    fator_kg_saco: float = 1.0  # kg por saco (conversão das entradas)
+    saldo_inicial: float = 0.0  # em sacos
     movimentos: list[MovimentoKardex] = field(default_factory=list)
 
     @property

@@ -3,9 +3,12 @@
 
 Layout:
   - Cabeçalho fixo: título, período e emissão
-  - Uma seção por produto: identificação + tabela de movimentos + saldo
+  - Uma seção por produto: identificação (com unidade) + tabela + saldo
   - Produto nunca quebrado no meio: cada seção entra inteira na página
   - Rodapé fixo: sistema à esquerda, "Página X de Y" à direita
+
+Todas as quantidades do kardex são exibidas na unidade de medida do
+produto (ex.: saco), pois as entradas saem convertidas do repository.
 """
 from datetime import datetime
 
@@ -104,9 +107,11 @@ def _cabecalho(canvas, periodo: str):
 
 
 def _secao_produto(kardex: KardexProduto) -> list:
+    unidade = kardex.unidade
     barra = Table(
         [[Paragraph(
-            f"<b>Produto {kardex.codigo}</b> · {kardex.descricao}",
+            f"<b>Produto {kardex.codigo}</b> · {kardex.descricao}"
+            f"<font size=8> [{unidade}]</font>",
             _ESTILO_BARRA)]],
         colWidths=[_LARGURA],
     )
@@ -118,10 +123,12 @@ def _secao_produto(kardex: KardexProduto) -> list:
     ]))
 
     info = Paragraph(
-        f"Saldo inicial: <b>{_numero(kardex.saldo_inicial)}</b> kg",
+        f"Saldo inicial: <b>{_numero(kardex.saldo_inicial)}</b> {unidade}",
         ParagraphStyle("info", parent=_ESTILO_CELULA, textColor=CINZA_TXT))
 
-    dados = [["Data", "Documento", "Histórico", "Entrada", "Saída", "Saldo"]]
+    dados = [["Data", "Documento", "Histórico",
+              f"Entrada ({unidade})", f"Saída ({unidade})",
+              f"Saldo ({unidade})"]]
     for movimento in kardex.movimentos:
         dados.append([
             _data_iso(movimento.data),
