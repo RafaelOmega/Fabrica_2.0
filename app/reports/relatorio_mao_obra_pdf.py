@@ -164,9 +164,13 @@ def _tabela_mao_obra(dados: list) -> Table:
 
 
 def _secao_saida(saida: dict) -> list:
-    barra = _barra_azul(
-        f"<b>Saída Nº {saida['sequencia']}</b> · "
-        f"{_data_br(saida['data_saida'])}")
+    titulo = (f"<b>Saída Nº {saida['sequencia']}</b> · "
+              f"{_data_br(saida['data_saida'])}")
+    if saida.get("destino"):
+        titulo += f" · Destino: {saida['destino']}"
+    if saida.get("retirada"):
+        titulo += f" · Retirada: {saida['retirada']}"
+    barra = _barra_azul(titulo)
 
     dados = [["Código", "Mão de Obra", "Qtde", "Custo", "Total"]]
     for linha in saida["linhas"]:

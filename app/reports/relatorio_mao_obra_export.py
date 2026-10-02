@@ -21,8 +21,8 @@ def gerar_xlsx_mao_obra(relatorio, caminho: str, periodo: str = "") -> None:
     # aba detalhe (saída a saída)
     ws = wb.active
     ws.title = "Detalhe"
-    ws.append(["Sequência", "Data", "Código", "Mão de Obra",
-               "Qtde", "Custo", "Total"])
+    ws.append(["Sequência", "Data", "Destino", "Retirada", "Código",
+               "Mão de Obra", "Qtde", "Custo", "Total"])
     for celula in ws[1]:
         celula.font = Font(bold=True)
 
@@ -31,18 +31,19 @@ def gerar_xlsx_mao_obra(relatorio, caminho: str, periodo: str = "") -> None:
     for linha in relatorio.linhas:
         if linha.saida_id != saida_atual:
             if saida_atual is not None:
-                ws.append(["", "", "", "Total da Saída", "", "",
+                ws.append(["", "", "", "", "", "Total da Saída", "", "",
                            round(total_saida, 2)])
             saida_atual = linha.saida_id
             total_saida = 0.0
         total_saida += linha.total
         ws.append([
             linha.sequencia, _data_br(linha.data_saida),
+            linha.destino, linha.retirada,
             linha.codigo, linha.descricao,
             linha.quantidade, linha.custo, linha.total,
         ])
     if saida_atual is not None:
-        ws.append(["", "", "", "Total da Saída", "", "",
+        ws.append(["", "", "", "", "", "Total da Saída", "", "",
                    round(total_saida, 2)])
 
     # aba resumo por mão de obra
@@ -66,27 +67,28 @@ def gerar_csv_mao_obra(relatorio, caminho: str, periodo: str = "") -> None:
 
     with open(caminho, "w", newline="", encoding="utf-8-sig") as fh:
         writer = csv.writer(fh, delimiter=";")
-        writer.writerow(["Sequência", "Data", "Código", "Mão de Obra",
-                         "Qtde", "Custo", "Total"])
+        writer.writerow(["Sequência", "Data", "Destino", "Retirada", "Código",
+                         "Mão de Obra", "Qtde", "Custo", "Total"])
 
         saida_atual = None
         total_saida = 0.0
         for linha in relatorio.linhas:
             if linha.saida_id != saida_atual:
                 if saida_atual is not None:
-                    writer.writerow(["", "", "Total da Saída", "", "",
-                                     "", round(total_saida, 2)])
+                    writer.writerow(["", "", "", "", "", "Total da Saída",
+                                     "", "", round(total_saida, 2)])
                 saida_atual = linha.saida_id
                 total_saida = 0.0
             total_saida += linha.total
             writer.writerow([
                 linha.sequencia, _data_br(linha.data_saida),
+                linha.destino, linha.retirada,
                 linha.codigo, linha.descricao,
                 linha.quantidade, linha.custo, linha.total,
             ])
         if saida_atual is not None:
-            writer.writerow(["", "", "Total da Saída", "", "",
-                             "", round(total_saida, 2)])
+            writer.writerow(["", "", "", "", "", "Total da Saída",
+                             "", "", round(total_saida, 2)])
 
         writer.writerow([])
         writer.writerow(["RESUMO POR MÃO DE OBRA"])

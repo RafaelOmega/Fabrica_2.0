@@ -104,8 +104,29 @@ _COMANDOS = (
     CREATE TABLE IF NOT EXISTS saidas (
         id         SERIAL PRIMARY KEY,
         sequencia  INTEGER NOT NULL UNIQUE,
-        data_saida DATE NOT NULL
+        data_saida DATE NOT NULL,
+        destino    VARCHAR(120) NOT NULL DEFAULT '',
+        retirada   VARCHAR(120) NOT NULL DEFAULT ''
     )
+    """,
+    """
+    DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'saidas' AND column_name = 'destino'
+        ) THEN
+            ALTER TABLE saidas ADD COLUMN destino
+                VARCHAR(120) NOT NULL DEFAULT '';
+        END IF;
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'saidas' AND column_name = 'retirada'
+        ) THEN
+            ALTER TABLE saidas ADD COLUMN retirada
+                VARCHAR(120) NOT NULL DEFAULT '';
+        END IF;
+    END $$
     """,
     """
     CREATE TABLE IF NOT EXISTS itens_saida (

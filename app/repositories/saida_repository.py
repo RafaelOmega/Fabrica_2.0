@@ -2,7 +2,7 @@
 """Repositório de saídas: acesso a dados (PostgreSQL).
 
 Schema:
-  saidas       (id, sequencia, data_saida)
+  saidas       (id, sequencia, data_saida, destino, retirada)
   itens_saida  (id, saida_id, produto_id, quantidade, custo)
   itens_saida_mao_obra (id, saida_id, produto_id, quantidade, custo)
   movimentos_kardex  (espelho: tipo 'S' com saida_id preenchido)
@@ -18,7 +18,7 @@ from app.utils.logger import get_logger
 
 logger = get_logger("saida_repository")
 
-_COLUNAS = "sequencia, data_saida"
+_COLUNAS = "sequencia, data_saida, destino, retirada"
 _COLUNAS_ITEM = "saida_id, produto_id, quantidade, custo"
 _COLUNAS_MAO_OBRA = "saida_id, produto_id, quantidade, custo"
 
@@ -37,9 +37,10 @@ class SaidaRepository:
                 cur.execute(
                     f"INSERT INTO saidas ({_COLUNAS}) "
                     "VALUES ((SELECT COALESCE(MAX(sequencia), 0) + 1 "
-                    "FROM saidas), %s) "
+                    "FROM saidas), %s, %s, %s) "
                     "RETURNING id, sequencia",
-                    (date.fromisoformat(saida.data_saida),),
+                    (date.fromisoformat(saida.data_saida),
+                     saida.destino, saida.retirada),
                 )
                 linha = cur.fetchone()
                 saida.id, saida.sequencia = linha[0], linha[1]
@@ -55,8 +56,10 @@ class SaidaRepository:
         with self._conn:
             with self._conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE saidas SET data_saida = %s WHERE id = %s",
-                    (date.fromisoformat(saida.data_saida), saida.id),
+                    "UPDATE saidas SET data_saida = %s, destino = %s, "
+                    "retirada = %s WHERE id = %s",
+                    (date.fromisoformat(saida.data_saida),
+                     saida.destino, saida.retirada, saida.id),
                 )
                 cur.execute(
                     "DELETE FROM itens_saida WHERE saida_id = %s",
@@ -148,7 +151,7 @@ class SaidaRepository:
         with self._conn:
             with self._conn.cursor() as cur:
                 cur.execute(
-                    "SELECT id, sequencia, data_saida "
+                    "SELECT id, sequencia, data_saida, destino, retirada "
                     "FROM saidas WHERE id = %s",
                     (saida_id,),
                 )
@@ -164,7 +167,7 @@ class SaidaRepository:
         with self._conn:
             with self._conn.cursor() as cur:
                 cur.execute(
-                    "SELECT id, sequencia, data_saida "
+                    "SELECT id, sequencia, data_saida, destino, retirada "
                     "FROM saidas WHERE sequencia = %s",
                     (sequencia,),
                 )
@@ -183,6 +186,7 @@ class SaidaRepository:
                 cur.execute(
                     """
                     SELECT s.id, s.sequencia, s.data_saida,
+                           s.destino, s.retirada,
                            (SELECT COALESCE(SUM(quantidade * custo), 0)
                               FROM itens_saida
                              WHERE saida_id = s.id) AS total
@@ -225,9 +229,11 @@ class SaidaRepository:
             data_saida=(linha[2].isoformat()
                         if hasattr(linha[2], "isoformat")
                         else str(linha[2] or "")),
+            destino=linha[3] or "",
+            retirada=linha[4] or "",
         )
-        if len(linha) > 3 and linha[3] is not None:
-            saida.total_sql = float(linha[3])
+        if len(linha) > 5 and linha[5] is not None:
+            saida.total_sql = float(linha[5])
         return saida
 
     @staticmethod

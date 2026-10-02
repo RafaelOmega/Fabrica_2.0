@@ -25,9 +25,9 @@ class RelatorioMaoObraRepository:
                   produto_id: int | None = None) -> RelatorioMaoObra:
         """Mão de obra das saídas no período.
 
-        Retorna o detalhe saída a saída (sequência + data) e o resumo
-        agregado por mão de obra. Se produto_id informado, filtra só
-        a mão de obra daquele produto.
+        Retorna o detalhe saída a saída (sequência, data, destino,
+        retirada) e o resumo agregado por mão de obra. Se produto_id
+        informado, filtra só a mão de obra daquele produto.
         """
         relatorio = RelatorioMaoObra(
             data_inicial=data_inicial.isoformat(),
@@ -40,6 +40,7 @@ class RelatorioMaoObraRepository:
                     cur.execute(
                         """
                         SELECT m.saida_id, s.sequencia, s.data_saida,
+                               s.destino, s.retirada,
                                m.produto_id, p.codigo, p.descricao,
                                m.quantidade, m.custo
                           FROM itens_saida_mao_obra m
@@ -55,6 +56,7 @@ class RelatorioMaoObraRepository:
                     cur.execute(
                         """
                         SELECT m.saida_id, s.sequencia, s.data_saida,
+                               s.destino, s.retirada,
                                m.produto_id, p.codigo, p.descricao,
                                m.quantidade, m.custo
                           FROM itens_saida_mao_obra m
@@ -72,11 +74,13 @@ class RelatorioMaoObraRepository:
                         data_saida=(l[2].isoformat()
                                     if hasattr(l[2], "isoformat")
                                     else str(l[2] or "")),
-                        produto_id=l[3],
-                        codigo=l[4] or "",
-                        descricao=l[5] or "",
-                        quantidade=float(l[6] or 0),
-                        custo=float(l[7] or 0),
+                        destino=l[3] or "",
+                        retirada=l[4] or "",
+                        produto_id=l[5],
+                        codigo=l[6] or "",
+                        descricao=l[7] or "",
+                        quantidade=float(l[8] or 0),
+                        custo=float(l[9] or 0),
                     ))
 
                 # resumo agregado por mão de obra

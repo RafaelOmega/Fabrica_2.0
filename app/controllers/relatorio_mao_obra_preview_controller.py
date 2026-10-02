@@ -63,6 +63,8 @@ class RelMaoObraPreviewController(QDialog):
                 saidas.append({
                     "sequencia": linha.sequencia,
                     "data_saida": linha.data_saida,
+                    "destino": linha.destino,
+                    "retirada": linha.retirada,
                     "linhas": [],
                 })
             saidas[indice[chave]]["linhas"].append(linha)
@@ -89,12 +91,17 @@ class RelMaoObraPreviewController(QDialog):
     @staticmethod
     def _html_saida(saida: dict) -> str:
         total_saida = sum(linha.total for linha in saida["linhas"])
+        titulo = (f"<b>Saída Nº {saida['sequencia']}</b> · "
+                  f"{_data_br(saida['data_saida'])}")
+        if saida.get("destino"):
+            titulo += f" · Destino: {saida['destino']}"
+        if saida.get("retirada"):
+            titulo += f" · Retirada: {saida['retirada']}"
         html = [
             "<table width='100%' cellspacing='0' cellpadding='0'>"
             f"<tr><td style='background-color:{AZUL};color:#FFFFFF;"
             "padding:6px 8px;font-size:10pt;'>"
-            f"<b>Saída Nº {saida['sequencia']}</b> · "
-            f"{_data_br(saida['data_saida'])}</td></tr></table>",
+            f"{titulo}</td></tr></table>",
             "<table width='100%' cellspacing='0' cellpadding='4' "
             f"style='border:1px solid {LINHA};font-size:9pt;color:{TEXTO};'>",
             f"<tr style='background-color:{ZEBRA};color:{AZUL};'>"

@@ -5,8 +5,12 @@ Responsabilidade: APENAS controle de tela (botões, campos, navegação).
 Operações de dados são delegadas aos services.
 
 Fluxo (espelhado na Entrada):
-  Inicial -> Novo (data) -> [bt_Abrir_Itens] -> Itens
+  Inicial -> Novo (data, destino, quem retirou) -> [bt_Abrir_Itens] -> Itens
           -> [bt_Sair_Itens] -> Finalizado -> Salvar
+
+Fluxo de campos (esquema em Z):
+  Data -> Destino -> Quem retirou -> Abrir Itens (linha de cima)
+       -> Código -> Qtde -> Custo -> Salvar Itens (linha de baixo)
 """
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtGui import (QKeySequence, QShortcut, QStandardItem,
@@ -79,6 +83,7 @@ class SaidaController(QWidget):
         self._montar_tabela_mao_obra()
         self._conectar_botoes()
         self._conectar_teclas()
+        self._definir_tab_order()
         self._limpar_campos()
 
     # ---------------- tabelas ----------------
@@ -113,12 +118,43 @@ class SaidaController(QWidget):
 
     def _conectar_teclas(self):
         self.ui.txt_Sequencia.returnPressed.connect(self._ao_enter_sequencia)
+        # fluxo em Z no cabeçalho: Data -> Destino -> Retirada
+        self.ui.txt_Destino.returnPressed.connect(
+            lambda: self.ui.txt_Retirada.setFocus())
+        self.ui.txt_Retirada.returnPressed.connect(self._abrir_itens)
+        # fluxo em Z nos itens: Código -> Qtde -> Custo -> adicionar
         self.ui.txt_Cod_Prod.returnPressed.connect(self._buscar_insumo)
         self.ui.txt_Qtde.returnPressed.connect(
             lambda: self.ui.txt_Custo.setFocus())
         self.ui.txt_Custo.returnPressed.connect(self._adicionar_item)
         self._at_f2 = QShortcut(QKeySequence(Qt.Key.Key_F2), self)
         self._at_f2.activated.connect(self._novo)
+
+    def _definir_tab_order(self):
+        """Ordem de Tab seguindo o esquema em Z."""
+        ordem = (
+            self.ui.txt_Sequencia,
+            self.ui.bt_Pesquisa_Saida,
+            self.ui.bt_Novo,
+            self.ui.dt_Saida,
+            self.ui.txt_Destino,
+            self.ui.txt_Retirada,
+            self.ui.bt_Abrir_Itens,
+            self.ui.txt_Cod_Prod,
+            self.ui.bt_Pesquisa_Itens,
+            self.ui.txt_Qtde,
+            self.ui.txt_Custo,
+            self.ui.bt_Salvar_Itens,
+            self.ui.bt_Limpar_Itens,
+            self.ui.bt_Excluir_Itens,
+            self.ui.bt_Sair_Itens,
+            self.ui.bt_Salvar,
+            self.ui.bt_Editar,
+            self.ui.bt_Limpar,
+            self.ui.bt_Excluir,
+        )
+        for anterior, proximo in zip(ordem, ordem[1:]):
+            QWidget.setTabOrder(anterior, proximo)
 
     # ---------------- estados da tela ----------------
 
@@ -154,11 +190,15 @@ class SaidaController(QWidget):
         cabecalho_ativo = (f == FASE_CABECALHO)
         itens_ativo = (f == FASE_ITENS)
 
+        # cabeçalho (esquema em Z: linha de cima)
         self.ui.dt_Saida.setEnabled(cabecalho_ativo)
+        self.ui.txt_Destino.setEnabled(cabecalho_ativo)
+        self.ui.txt_Retirada.setEnabled(cabecalho_ativo)
 
         self.ui.bt_Abrir_Itens.setEnabled(
             cabecalho_ativo or f == FASE_FINALIZADO)
 
+        # itens (esquema em Z: linha de baixo)
         self.ui.txt_Cod_Prod.setEnabled(itens_ativo)
         self.ui.bt_Pesquisa_Itens.setEnabled(itens_ativo)
         self.ui.txt_Qtde.setEnabled(itens_ativo)
@@ -177,6 +217,7 @@ class SaidaController(QWidget):
 
     def _set_formulario(self, ativo: bool):
         for w in (self.ui.dt_Saida,
+                  self.ui.txt_Destino, self.ui.txt_Retirada,
                   self.ui.txt_Cod_Prod, self.ui.bt_Pesquisa_Itens,
                   self.ui.txt_Qtde, self.ui.txt_Custo,
                   self.ui.bt_Salvar_Itens, self.ui.bt_Limpar_Itens,
@@ -513,6 +554,8 @@ class SaidaController(QWidget):
         return Saida(
             id=self._saida_id,
             data_saida=self.ui.dt_Saida.date().toString("yyyy-MM-dd"),
+            destino=self.ui.txt_Destino.text().strip(),
+            retirada=self.ui.txt_Retirada.text().strip(),
             itens=list(self._itens),
             mao_obra=list(self._mao_obra),
         )
@@ -583,6 +626,8 @@ class SaidaController(QWidget):
         self._produto_selecionado = None
         self.ui.txt_Sequencia.clear()
         self.ui.dt_Saida.setDate(QDate.currentDate())
+        self.ui.txt_Destino.clear()
+        self.ui.txt_Retirada.clear()
         self.ui.txt_Cod_Prod.clear()
         self.ui.txt_Descricao_Prod.clear()
         self.ui.txt_Qtde.clear()
@@ -605,6 +650,8 @@ class SaidaController(QWidget):
         data = QDate.fromString(saida.data_saida, "yyyy-MM-dd")
         if data.isValid():
             self.ui.dt_Saida.setDate(data)
+        self.ui.txt_Destino.setText(saida.destino)
+        self.ui.txt_Retirada.setText(saida.retirada)
         self._itens = list(saida.itens)
         self._mao_obra = list(saida.mao_obra)
         self._atualizar_tabela()

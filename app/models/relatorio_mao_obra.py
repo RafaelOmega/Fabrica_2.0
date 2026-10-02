@@ -9,6 +9,8 @@ class LinhaMaoObraSaida:
     saida_id: int | None = None
     sequencia: int | None = None
     data_saida: str = ""
+    destino: str = ""
+    retirada: str = ""
     produto_id: int | None = None
     codigo: str = ""
     descricao: str = ""

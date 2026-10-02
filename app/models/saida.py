@@ -67,6 +67,8 @@ class ItemSaidaMaoObra:
 @dataclass
 class Saida:
     data_saida: str = ""
+    destino: str = ""
+    retirada: str = ""
     sequencia: int | None = None
     total_sql: float = 0.0
     id: int | None = None
@@ -83,6 +85,8 @@ class Saida:
     def from_dict(cls, dados: dict) -> "Saida":
         return cls(
             data_saida=str(dados.get("data_saida", "")),
+            destino=str(dados.get("destino", "")),
+            retirada=str(dados.get("retirada", "")),
             sequencia=dados.get("sequencia"),
             total_sql=float(dados.get("total_sql", 0.0) or 0.0),
             id=dados.get("id"),
