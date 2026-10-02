@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'saidaBXUxZm.ui'
+## Form generated from reading UI file 'saidamaoMcu.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -108,16 +108,40 @@ class Ui_Saida(object):
 
         self.horizontalLayout_3.addWidget(self.dt_Saida)
 
+        self.lb_Destino = QLabel(self.frm_Abrir_Itens)
+        self.lb_Destino.setObjectName(u"lb_Destino")
+        self.lb_Destino.setMinimumSize(QSize(0, 30))
+        self.lb_Destino.setMaximumSize(QSize(16777215, 30))
+
+        self.horizontalLayout_3.addWidget(self.lb_Destino)
+
+        self.txt_Destino = QLineEdit(self.frm_Abrir_Itens)
+        self.txt_Destino.setObjectName(u"txt_Destino")
+        self.txt_Destino.setMinimumSize(QSize(0, 30))
+        self.txt_Destino.setMaximumSize(QSize(16777215, 30))
+
+        self.horizontalLayout_3.addWidget(self.txt_Destino)
+
+        self.lb_Retirada = QLabel(self.frm_Abrir_Itens)
+        self.lb_Retirada.setObjectName(u"lb_Retirada")
+        self.lb_Retirada.setMinimumSize(QSize(0, 30))
+        self.lb_Retirada.setMaximumSize(QSize(16777215, 30))
+
+        self.horizontalLayout_3.addWidget(self.lb_Retirada)
+
+        self.txt_Retirada = QLineEdit(self.frm_Abrir_Itens)
+        self.txt_Retirada.setObjectName(u"txt_Retirada")
+        self.txt_Retirada.setMinimumSize(QSize(0, 30))
+        self.txt_Retirada.setMaximumSize(QSize(16777215, 30))
+
+        self.horizontalLayout_3.addWidget(self.txt_Retirada)
+
         self.bt_Abrir_Itens = QPushButton(self.frm_Abrir_Itens)
         self.bt_Abrir_Itens.setObjectName(u"bt_Abrir_Itens")
         self.bt_Abrir_Itens.setMinimumSize(QSize(0, 30))
         self.bt_Abrir_Itens.setMaximumSize(QSize(16777215, 30))
 
         self.horizontalLayout_3.addWidget(self.bt_Abrir_Itens)
-
-        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.horizontalLayout_3.addItem(self.horizontalSpacer_2)
 
 
         self.verticalLayout.addWidget(self.frm_Abrir_Itens)
@@ -404,6 +428,8 @@ class Ui_Saida(object):
         self.bt_Pesquisa_Saida.setText(QCoreApplication.translate("Saida", u"...", None))
         self.bt_Novo.setText(QCoreApplication.translate("Saida", u"+", None))
         self.lb_Data.setText(QCoreApplication.translate("Saida", u"Data:", None))
+        self.lb_Destino.setText(QCoreApplication.translate("Saida", u"Destino:", None))
+        self.lb_Retirada.setText(QCoreApplication.translate("Saida", u"Quem retirou:", None))
         self.bt_Abrir_Itens.setText(QCoreApplication.translate("Saida", u"Abrir Itens", None))
         self.lb_Cod_Prod.setText(QCoreApplication.translate("Saida", u"C\u00f3d:", None))
         self.bt_Pesquisa_Itens.setText(QCoreApplication.translate("Saida", u"...", None))
