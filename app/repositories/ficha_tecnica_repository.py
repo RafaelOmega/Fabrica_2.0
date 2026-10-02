@@ -140,7 +140,9 @@ class FichaTecnicaRepository:
             """
             SELECT i.id, i.ficha_id, i.produto_id, i.codigo_produto,
                    i.quantidade_kg, COALESCE(p.descricao, ''),
-                   COALESCE(p.mao_obra, false), COALESCE(p.custo, 0)
+                   COALESCE(p.mao_obra, false),
+                   COALESCE(p.controla_estoque, true),
+                   COALESCE(p.custo, 0)
               FROM itens_ficha_tecnica i
               LEFT JOIN produtos p ON p.id = i.produto_id
              WHERE i.ficha_id = %s ORDER BY i.id
@@ -153,7 +155,8 @@ class FichaTecnicaRepository:
                 codigo_produto=l[3], quantidade_kg=float(l[4]),
                 descricao_produto=l[5] or "",
                 mao_obra=bool(l[6]),
-                custo=float(l[7] or 0),
+                controla_estoque=bool(l[7]),
+                custo=float(l[8] or 0),
             )
             for l in cur.fetchall()
         ]

@@ -11,6 +11,7 @@ class ItemFichaTecnica:
     quantidade_kg: float = 0.0
     fator_conversao_kg_saco: float = 0.0  # kg por saco (uni. de medida)
     mao_obra: bool = False
+    controla_estoque: bool = True   # só baixa insumo que controla estoque
     custo: float = 0.0
     ficha_id: int | None = None
     id: int | None = None
@@ -25,6 +26,7 @@ class ItemFichaTecnica:
             fator_conversao_kg_saco=float(
                 dados.get("fator_conversao_kg_saco", 0.0) or 0.0),
             mao_obra=bool(dados.get("mao_obra", False)),
+            controla_estoque=bool(dados.get("controla_estoque", True)),
             custo=float(dados.get("custo", 0.0) or 0.0),
             ficha_id=dados.get("ficha_id"),
             id=dados.get("id"),
