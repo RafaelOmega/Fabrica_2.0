@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Geração do relatório de mão de obra (PDF/XLSX/CSV)."""
+"""Geração do PDF do relatório de mão de obra."""
 from datetime import datetime
 
 
@@ -13,8 +13,16 @@ def _numero(valor: float) -> str:
     return texto.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+def _data_br(data_iso: str) -> str:
+    """AAAA-MM-DD -> DD/MM/AAAA."""
+    try:
+        return datetime.strptime(data_iso, "%Y-%m-%d").strftime("%d/%m/%Y")
+    except ValueError:
+        return data_iso
+
+
 def gerar_pdf_mao_obra(relatorio, caminho: str, periodo: str = "") -> None:
-    """Gera o PDF do relatório de mão de obra."""
+    """Gera o PDF do relatório de mão de obra (detalhe + resumo)."""
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
     from reportlab.pdfgen import canvas
@@ -29,6 +37,60 @@ def gerar_pdf_mao_obra(relatorio, caminho: str, periodo: str = "") -> None:
     if periodo:
         pdf.drawString(20 * mm, y, periodo)
         y -= 6 * mm
+
+    # detalhe saída a saída
+    saida_atual = None
+    total_saida = 0.0
+    for linha in relatorio.linhas:
+        if linha.saida_id != saida_atual:
+            if saida_atual is not None:
+                pdf.setFont("Helvetica-Bold", 9)
+                pdf.drawString(50 * mm, y, "Total da Saída")
+                pdf.drawRightString(190 * mm, y, _moeda(total_saida))
+                y -= 5 * mm
+            saida_atual = linha.saida_id
+            total_saida = 0.0
+            y -= 6 * mm
+            if y < 25 * mm:
+                pdf.showPage()
+                y = altura - 20 * mm
+            pdf.setFont("Helvetica-Bold", 10)
+            pdf.drawString(20 * mm, y,
+                           f"Saída Nº {linha.sequencia} · "
+                           f"{_data_br(linha.data_saida)}")
+            y -= 5 * mm
+            pdf.setFont("Helvetica-Bold", 9)
+            pdf.drawString(20 * mm, y, "Código")
+            pdf.drawString(50 * mm, y, "Mão de Obra")
+            pdf.drawRightString(140 * mm, y, "Qtde")
+            pdf.drawRightString(160 * mm, y, "Custo")
+            pdf.drawRightString(190 * mm, y, "Total")
+            y -= 5 * mm
+            pdf.setFont("Helvetica", 9)
+        total_saida += linha.total
+        pdf.drawString(20 * mm, y, str(linha.codigo))
+        pdf.drawString(50 * mm, y, linha.descricao[:40])
+        pdf.drawRightString(140 * mm, y, _numero(linha.quantidade))
+        pdf.drawRightString(160 * mm, y, _moeda(linha.custo))
+        pdf.drawRightString(190 * mm, y, _moeda(linha.total))
+        y -= 5 * mm
+        if y < 25 * mm:
+            pdf.showPage()
+            y = altura - 20 * mm
+    if saida_atual is not None:
+        pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(50 * mm, y, "Total da Saída")
+        pdf.drawRightString(190 * mm, y, _moeda(total_saida))
+        y -= 5 * mm
+
+    # resumo por mão de obra
+    y -= 8 * mm
+    if y < 25 * mm:
+        pdf.showPage()
+        y = altura - 20 * mm
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(20 * mm, y, "RESUMO POR MÃO DE OBRA")
+    y -= 5 * mm
     pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(20 * mm, y, "Código")
     pdf.drawString(50 * mm, y, "Mão de Obra")
@@ -37,52 +99,17 @@ def gerar_pdf_mao_obra(relatorio, caminho: str, periodo: str = "") -> None:
     pdf.drawRightString(190 * mm, y, "Total")
     y -= 5 * mm
     pdf.setFont("Helvetica", 9)
-    for linha in relatorio.linhas:
+    for linha in relatorio.resumo:
         pdf.drawString(20 * mm, y, str(linha.codigo))
         pdf.drawString(50 * mm, y, linha.descricao[:40])
         pdf.drawRightString(140 * mm, y, _numero(linha.quantidade))
         pdf.drawRightString(160 * mm, y, _moeda(linha.custo))
         pdf.drawRightString(190 * mm, y, _moeda(linha.total))
         y -= 5 * mm
-        if y < 20 * mm:
+        if y < 25 * mm:
             pdf.showPage()
             y = altura - 20 * mm
     pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(20 * mm, y, "Total geral")
     pdf.drawRightString(190 * mm, y, _moeda(relatorio.total_geral))
     pdf.save()
-
-
-def gerar_xlsx_mao_obra(relatorio, caminho: str, periodo: str = "") -> None:
-    """Gera o XLSX do relatório de mão de obra."""
-    from openpyxl import Workbook
-    from openpyxl.styles import Font
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Mão de Obra"
-    ws.append(["Código", "Mão de Obra", "Qtde", "Custo", "Total"])
-    for celula in ws[1]:
-        celula.font = Font(bold=True)
-    for linha in relatorio.linhas:
-        ws.append([
-            linha.codigo, linha.descricao,
-            linha.quantidade, linha.custo, linha.total,
-        ])
-    ws.append(["", "", "", "Total geral", relatorio.total_geral])
-    wb.save(caminho)
-
-
-def gerar_csv_mao_obra(relatorio, caminho: str, periodo: str = "") -> None:
-    """Gera o CSV do relatório de mão de obra."""
-    import csv
-
-    with open(caminho, "w", newline="", encoding="utf-8-sig") as fh:
-        writer = csv.writer(fh, delimiter=";")
-        writer.writerow(["Código", "Mão de Obra", "Qtde", "Custo", "Total"])
-        for linha in relatorio.linhas:
-            writer.writerow([
-                linha.codigo, linha.descricao,
-                linha.quantidade, linha.custo, linha.total,
-            ])
-        writer.writerow(["", "", "", "Total geral", relatorio.total_geral])

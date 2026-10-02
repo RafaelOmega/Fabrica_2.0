@@ -4,8 +4,25 @@ from dataclasses import dataclass, field
 
 
 @dataclass
-class LinhaMaoObra:
-    """Uma linha do relatório: mão de obra consumida nas saídas do período."""
+class LinhaMaoObraSaida:
+    """Mão de obra de uma saída específica (detalhe)."""
+    saida_id: int | None = None
+    sequencia: int | None = None
+    data_saida: str = ""
+    produto_id: int | None = None
+    codigo: str = ""
+    descricao: str = ""
+    quantidade: float = 0.0
+    custo: float = 0.0
+
+    @property
+    def total(self) -> float:
+        return self.quantidade * self.custo
+
+
+@dataclass
+class ResumoMaoObra:
+    """Resumo agregado por mão de obra no período."""
     produto_id: int | None = None
     codigo: str = ""
     descricao: str = ""
@@ -19,10 +36,11 @@ class LinhaMaoObra:
 
 @dataclass
 class RelatorioMaoObra:
-    """Relatório agregado por mão de obra no período."""
+    """Relatório de mão de obra: detalhe saída a saída + resumo."""
     data_inicial: str = ""
     data_final: str = ""
-    linhas: list[LinhaMaoObra] = field(default_factory=list)
+    linhas: list[LinhaMaoObraSaida] = field(default_factory=list)
+    resumo: list[ResumoMaoObra] = field(default_factory=list)
 
     @property
     def total_geral(self) -> float:

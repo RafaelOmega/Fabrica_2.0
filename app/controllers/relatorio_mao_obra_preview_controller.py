@@ -8,7 +8,7 @@ from datetime import datetime
 from PySide6.QtWidgets import QFileDialog, QMessageBox, QDialog
 
 from app.models.relatorio_mao_obra import RelatorioMaoObra
-from app.reports.relatorio_mao_obra_pdf import _moeda, _numero
+from app.reports.relatorio_mao_obra_pdf import _moeda, _numero, _data_br
 from app.utils.logger import get_logger
 from app.views.ui_relatorio_mao_obra_preview import Ui_Rel_Mao_Obra_Preview
 
@@ -52,6 +52,22 @@ class RelMaoObraPreviewController(QDialog):
 
     # ---------------- visualização ----------------
 
+    def _saidas_agrupadas(self):
+        """Agrupa as linhas por saída, preservando a ordem."""
+        saidas = []
+        indice = {}
+        for linha in self._relatorio.linhas:
+            chave = linha.saida_id
+            if chave not in indice:
+                indice[chave] = len(saidas)
+                saidas.append({
+                    "sequencia": linha.sequencia,
+                    "data_saida": linha.data_saida,
+                    "linhas": [],
+                })
+            saidas[indice[chave]]["linhas"].append(linha)
+        return saidas
+
     def _montar_visualizacao(self):
         partes = [
             f"<h2 style='color:{AZUL};margin-bottom:2px;'>"
@@ -61,17 +77,34 @@ class RelMaoObraPreviewController(QDialog):
             partes.append(f"<p style='color:{CINZA};'>{self._periodo}</p>")
         if not self._relatorio.linhas:
             partes.append("<p>Nenhuma mão de obra no período.</p>")
-        partes.append(
+
+        # detalhe saída a saída
+        for saida in self._saidas_agrupadas():
+            partes.append(self._html_saida(saida))
+
+        # resumo por mão de obra
+        partes.append(self._html_resumo())
+        self.ui.txt_Visualizacao.setHtml("".join(partes))
+
+    @staticmethod
+    def _html_saida(saida: dict) -> str:
+        total_saida = sum(linha.total for linha in saida["linhas"])
+        html = [
+            "<table width='100%' cellspacing='0' cellpadding='0'>"
+            f"<tr><td style='background-color:{AZUL};color:#FFFFFF;"
+            "padding:6px 8px;font-size:10pt;'>"
+            f"<b>Saída Nº {saida['sequencia']}</b> · "
+            f"{_data_br(saida['data_saida'])}</td></tr></table>",
             "<table width='100%' cellspacing='0' cellpadding='4' "
-            f"style='border:1px solid {LINHA};font-size:9pt;color:{TEXTO};'>"
+            f"style='border:1px solid {LINHA};font-size:9pt;color:{TEXTO};'>",
             f"<tr style='background-color:{ZEBRA};color:{AZUL};'>"
             "<th align='left'>Código</th><th align='left'>Mão de Obra</th>"
             "<th align='right'>Qtde</th><th align='right'>Custo</th>"
             "<th align='right'>Total</th></tr>",
-        )
-        for indice, linha in enumerate(self._relatorio.linhas):
+        ]
+        for indice, linha in enumerate(saida["linhas"]):
             fundo = ZEBRA if indice % 2 else "#FFFFFF"
-            partes.append(
+            html.append(
                 f"<tr style='background-color:{fundo};'>"
                 f"<td>{linha.codigo}</td>"
                 f"<td>{linha.descricao}</td>"
@@ -80,14 +113,47 @@ class RelMaoObraPreviewController(QDialog):
                 f"<td align='right'>{_moeda(linha.total)}</td>"
                 "</tr>"
             )
-        partes.append(
+        html.append(
+            "<tr style='background-color:#E8EDF2;font-weight:bold;"
+            f"color:{TEXTO};'>"
+            "<td colspan='4'>Total da Saída</td>"
+            f"<td align='right'>{_moeda(total_saida)}</td></tr>"
+            "</table><br>"
+        )
+        return "".join(html)
+
+    def _html_resumo(self) -> str:
+        html = [
+            "<table width='100%' cellspacing='0' cellpadding='0'>"
+            f"<tr><td style='background-color:{AZUL};color:#FFFFFF;"
+            "padding:6px 8px;font-size:10pt;'>"
+            "<b>RESUMO POR MÃO DE OBRA</b></td></tr></table>",
+            "<table width='100%' cellspacing='0' cellpadding='4' "
+            f"style='border:1px solid {LINHA};font-size:9pt;color:{TEXTO};'>",
+            f"<tr style='background-color:{ZEBRA};color:{AZUL};'>"
+            "<th align='left'>Código</th><th align='left'>Mão de Obra</th>"
+            "<th align='right'>Qtde</th><th align='right'>Custo</th>"
+            "<th align='right'>Total</th></tr>",
+        ]
+        for indice, linha in enumerate(self._relatorio.resumo):
+            fundo = ZEBRA if indice % 2 else "#FFFFFF"
+            html.append(
+                f"<tr style='background-color:{fundo};'>"
+                f"<td>{linha.codigo}</td>"
+                f"<td>{linha.descricao}</td>"
+                f"<td align='right'>{_numero(linha.quantidade)}</td>"
+                f"<td align='right'>{_moeda(linha.custo)}</td>"
+                f"<td align='right'>{_moeda(linha.total)}</td>"
+                "</tr>"
+            )
+        html.append(
             "<tr style='background-color:#E8EDF2;font-weight:bold;"
             f"color:{TEXTO};'>"
             "<td colspan='4'>Total geral</td>"
             f"<td align='right'>{_moeda(self._relatorio.total_geral)}</td></tr>"
             "</table>"
         )
-        self.ui.txt_Visualizacao.setHtml("".join(partes))
+        return "".join(html)
 
     # ---------------- exportação ----------------
 
