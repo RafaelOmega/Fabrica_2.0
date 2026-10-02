@@ -142,9 +142,11 @@ class FichaTecnicaRepository:
                    i.quantidade_kg, COALESCE(p.descricao, ''),
                    COALESCE(p.mao_obra, false),
                    COALESCE(p.controla_estoque, true),
-                   COALESCE(p.custo, 0)
+                   COALESCE(p.custo, 0),
+                   COALESCE(um.fator_conversao, 0) AS fator_kg_saco
               FROM itens_ficha_tecnica i
               LEFT JOIN produtos p ON p.id = i.produto_id
+              LEFT JOIN unidades_medida um ON um.codigo = p.unidade
              WHERE i.ficha_id = %s ORDER BY i.id
             """,
             (ficha_id,),
@@ -157,6 +159,7 @@ class FichaTecnicaRepository:
                 mao_obra=bool(l[6]),
                 controla_estoque=bool(l[7]),
                 custo=float(l[8] or 0),
+                fator_conversao_kg_saco=float(l[9] or 0),
             )
             for l in cur.fetchall()
         ]
