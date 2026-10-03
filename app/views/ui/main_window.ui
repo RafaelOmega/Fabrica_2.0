@@ -190,6 +190,7 @@
     <addaction name="actionFichaKardexProduto"/>
     <addaction name="actionRel_Fichas_Tecnicas"/>
     <addaction name="actionMaoObra"/>
+    <addaction name="actionBaixaFichaTecnica"/>
    </widget>
    <addaction name="menuCadastros"/>
    <addaction name="menuLan_amentos"/>
@@ -243,6 +244,11 @@
   <action name="actionMaoObra">
    <property name="text">
     <string>Mão de Obra</string>
+   </property>
+  </action>
+  <action name="actionBaixaFichaTecnica">
+   <property name="text">
+    <string>Baixa Ficha Tecnica</string>
    </property>
   </action>
  </widget>
