@@ -3,8 +3,8 @@
 
 Layout seguindo o padrão dos demais relatórios:
   - Cabeçalho fixo: título, período e emissão
-  - Agrupado por produto acabado, com cada produção (entrada de origem)
-    e os insumos que compuseram o lote
+  - Sem filtro: agrupado por entrada (acabados + insumos)
+  - Com filtro: agrupado por produto acabado (entradas + insumos)
   - Rodapé fixo: sistema à esquerda, "Página X de Y" à direita
 """
 from datetime import datetime
@@ -37,6 +37,8 @@ _ESTILO_BARRA = ParagraphStyle("barra", fontName="Helvetica-Bold",
 _ESTILO_CELULA = ParagraphStyle("celula", fontName="Helvetica", fontSize=9,
                                 leading=11, textColor=TEXTO)
 _ESTILO_TOTAL = ParagraphStyle("total", parent=_ESTILO_CELULA, alignment=2)
+_ESTILO_SUB = ParagraphStyle("sub", parent=_ESTILO_CELULA,
+                             textColor=CINZA_TXT)
 
 
 def _moeda(valor: float) -> str:
@@ -118,10 +120,13 @@ def _barra_azul(texto: str) -> Table:
     return barra
 
 
-def _tabela_composicao(linhas: list[list], total: float) -> Table:
-    dados = [["Código", "Insumo", "Qtde", "Custo", "Total", "Origem"]] + linhas + [
-        ["", "", Paragraph("<b>Total da produção</b>", _ESTILO_TOTAL), "",
-         Paragraph(f"<b>{_moeda(total)}</b>", _ESTILO_TOTAL), ""],
+def _tabela_itens(linhas: list[list], total_texto: str,
+                  total: float) -> Table:
+    dados = [["Código", "Insumo", "Qtde", "Custo", "Total", "Origem"]] + \
+        linhas + [
+            ["", "", "", "",
+             Paragraph(f"<b>{total_texto}</b>", _ESTILO_TOTAL),
+             Paragraph(f"<b>{_moeda(total)}</b>", _ESTILO_TOTAL)],
     ]
     tabela = Table(
         dados,
@@ -139,12 +144,51 @@ def _tabela_composicao(linhas: list[list], total: float) -> Table:
         ("LINEBELOW", (0, 0), (-1, 0), 0.8, AZUL),
         ("GRID", (0, 0), (-1, -2), 0.4, LINHA),
         ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E8EDF2")),
-        ("SPAN", (0, -1), (2, -1)),
+        ("SPAN", (0, -1), (3, -1)),
         ("ALIGN", (2, 0), (4, -1), "RIGHT"),
         ("TOPPADDING", (0, 0), (-1, -1), 4),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]))
     return tabela
+
+
+def _linhas_de(producao) -> list[list]:
+    linhas = []
+    for item in producao.itens:
+        linhas.append([
+            item.codigo,
+            Paragraph(item.descricao, _ESTILO_CELULA),
+            _numero(item.quantidade_sacos),
+            _moeda(item.custo),
+            _moeda(item.total),
+            f"Ent. Nº {item.origem_sequencia}",
+        ])
+    if not linhas:
+        linhas.append(["", Paragraph("sem ficha técnica", _ESTILO_CELULA),
+                       "", "", "", ""])
+    return linhas
+
+
+def _secao_entrada(entrada) -> list:
+    titulo = (f"<b>ENTRADA Nº {entrada.sequencia}</b> · "
+              f"{_data_br(entrada.data_entrada)}")
+    if entrada.motivo_descricao:
+        titulo += f" · {entrada.motivo_descricao}"
+    story = [_barra_azul(titulo)]
+    for ac in entrada.acabados:
+        story.append(Spacer(1, 0.2 * cm))
+        story.append(Paragraph(
+            f"<b>{ac.codigo} - {ac.descricao}</b> · produzido: "
+            f"<b>{_numero(ac.quantidade)}</b> sacos", _ESTILO_SUB))
+        story.append(Spacer(1, 0.1 * cm))
+        story.append(_tabela_itens(
+            _linhas_de(ac), f"Total de insumos {ac.codigo}",
+            ac.total_insumos))
+    story.append(Spacer(1, 0.15 * cm))
+    story.append(Paragraph(
+        f"<b>TOTAL DA ENTRADA Nº {entrada.sequencia}: "
+        f"{_moeda(entrada.total)}</b>", _ESTILO_TOTAL))
+    return story
 
 
 def _secao_grupo(grupo) -> list:
@@ -154,25 +198,15 @@ def _secao_grupo(grupo) -> list:
         story.append(Paragraph(
             f"<b>Entrada Nº {producao.sequencia}</b> · "
             f"{_data_br(producao.data_entrada)} · produzido: "
-            f"<b>{_numero(producao.quantidade)}</b> sacos",
-            ParagraphStyle("origem", parent=_ESTILO_CELULA,
-                           textColor=CINZA_TXT)))
+            f"<b>{_numero(producao.quantidade)}</b> sacos", _ESTILO_SUB))
         story.append(Spacer(1, 0.1 * cm))
-
-        linhas = []
-        for item in producao.itens:
-            linhas.append([
-                item.codigo,
-                Paragraph(item.descricao, _ESTILO_CELULA),
-                _numero(item.quantidade_sacos),
-                _moeda(item.custo),
-                _moeda(item.total),
-                f"Ent. Nº {item.origem_sequencia}",
-            ])
-        if not linhas:
-            linhas.append(["", Paragraph("sem ficha técnica", _ESTILO_CELULA),
-                           "", "", "", ""])
-        story.append(_tabela_composicao(linhas, producao.total_insumos))
+        story.append(_tabela_itens(_linhas_de(producao),
+                                   "Total de insumos da produção",
+                                   producao.total_insumos))
+    story.append(Spacer(1, 0.15 * cm))
+    story.append(Paragraph(
+        f"<b>TOTAL DOS INSUMOS {grupo.codigo}: "
+        f"{_moeda(grupo.total_insumos)}</b>", _ESTILO_TOTAL))
     return story
 
 
@@ -196,15 +230,21 @@ def gerar_pdf_baixa_ficha_tecnica(relatorio, caminho: str,
     ])
 
     story: list = []
-    if not relatorio.grupos:
+    if not relatorio.tem_dados:
         story.append(Paragraph("Nenhuma baixa de ficha técnica no período.",
                                _ESTILO_CELULA))
-    for grupo in relatorio.grupos:
-        story.append(KeepTogether(_secao_grupo(grupo)))
-        story.append(Spacer(1, 0.5 * cm))
+
+    if relatorio.ficha_produto_id:
+        for grupo in relatorio.grupos:
+            story.append(KeepTogether(_secao_grupo(grupo)))
+            story.append(Spacer(1, 0.5 * cm))
+    else:
+        for entrada in relatorio.entradas:
+            story.append(KeepTogether(_secao_entrada(entrada)))
+            story.append(Spacer(1, 0.5 * cm))
 
     story.append(Paragraph(
-        f"<b>Total geral: {_moeda(relatorio.total_geral)}</b>",
+        f"<b>TOTAL GERAL: {_moeda(relatorio.total_geral)}</b>",
         _ESTILO_TOTAL))
 
     doc.build(story, canvasmaker=_CanvasPaginado)

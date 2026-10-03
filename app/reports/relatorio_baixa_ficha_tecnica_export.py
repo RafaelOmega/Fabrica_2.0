@@ -12,30 +12,32 @@ def _data_br(data_iso: str) -> str:
 
 
 def _linhas_do_relatorio(relatorio):
-    """Gera linhas planas para exportação."""
-    for grupo in relatorio.grupos:
-        for producao in grupo.producoes:
-            if producao.itens:
-                for item in producao.itens:
+    """Gera linhas planas (uma por insumo) agrupadas por entrada."""
+    for entrada in relatorio.entradas:
+        for ac in entrada.acabados:
+            if ac.itens:
+                for item in ac.itens:
                     yield [
-                        grupo.codigo, grupo.descricao,
-                        producao.sequencia, _data_br(producao.data_entrada),
-                        producao.quantidade,
-                        item.codigo, item.descricao,
-                        item.quantidade_sacos, item.custo, item.total,
+                        entrada.sequencia, _data_br(entrada.data_entrada),
+                        entrada.motivo_descricao,
+                        f"{ac.codigo} - {ac.descricao}", ac.quantidade,
+                        item.codigo, item.descricao, item.quantidade_sacos,
+                        item.custo, item.total,
                         f"Ent. Nº {item.origem_sequencia}",
                     ]
             else:
                 yield [
-                    grupo.codigo, grupo.descricao,
-                    producao.sequencia, _data_br(producao.data_entrada),
-                    producao.quantidade,
-                    "", "sem ficha técnica", "", "", producao.total_insumos,
-                    f"Ent. Nº {producao.sequencia}",
+                    entrada.sequencia, _data_br(entrada.data_entrada),
+                    entrada.motivo_descricao,
+                    f"{ac.codigo} - {ac.descricao}", ac.quantidade,
+                    "", "sem ficha técnica", "", "", ac.total_insumos,
+                    f"Ent. Nº {entrada.sequencia}",
                 ]
-                yield None  # separador após produção
-            yield None
+        yield ["", "", "", f"Total da Entrada Nº {entrada.sequencia}",
+               "", "", "", "", "", round(entrada.total, 2), ""]
         yield None
+    yield ["", "", "", "TOTAL GERAL", "", "", "", "", "",
+           round(relatorio.total_geral, 2), ""]
 
 
 def gerar_xlsx_baixa_ficha_tecnica(relatorio, caminho: str,
@@ -47,7 +49,7 @@ def gerar_xlsx_baixa_ficha_tecnica(relatorio, caminho: str,
     wb = Workbook()
     ws = wb.active
     ws.title = "Detalhe"
-    ws.append(["Cód Acabado", "Acabado", "Entrada Nº", "Data",
+    ws.append(["Entrada Nº", "Data", "Motivo", "Acabado",
                "Qtde Produzida", "Cód Insumo", "Insumo", "Qtde",
                "Custo", "Total", "Origem"])
     for celula in ws[1]:
@@ -57,8 +59,6 @@ def gerar_xlsx_baixa_ficha_tecnica(relatorio, caminho: str,
         if linha is None:
             continue
         ws.append(linha)
-    ws.append(["", "", "", "", "", "", "", "", "", "Total geral",
-               round(relatorio.total_geral, 2)])
     wb.save(caminho)
 
 
@@ -69,7 +69,7 @@ def gerar_csv_baixa_ficha_tecnica(relatorio, caminho: str,
 
     with open(caminho, "w", newline="", encoding="utf-8-sig") as fh:
         writer = csv.writer(fh, delimiter=";")
-        writer.writerow(["Cód Acabado", "Acabado", "Entrada Nº", "Data",
+        writer.writerow(["Entrada Nº", "Data", "Motivo", "Acabado",
                          "Qtde Produzida", "Cód Insumo", "Insumo", "Qtde",
                          "Custo", "Total", "Origem"])
         for linha in _linhas_do_relatorio(relatorio):
@@ -77,5 +77,3 @@ def gerar_csv_baixa_ficha_tecnica(relatorio, caminho: str,
                 writer.writerow([])
                 continue
             writer.writerow(linha)
-        writer.writerow(["", "", "", "", "", "", "", "", "", "Total geral",
-                         round(relatorio.total_geral, 2)])

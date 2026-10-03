@@ -60,12 +60,36 @@ class GrupoAcabado:
 
 
 @dataclass
+class EntradaBaixa:
+    """Entrada de produção e os acabados produzidos nela."""
+    entrada_id: int | None = None
+    sequencia: int | None = None
+    data_entrada: str = ""
+    motivo_descricao: str = ""
+    acabados: list[ProducaoAcabado] = field(default_factory=list)
+
+    @property
+    def total(self) -> float:
+        return sum(a.total_insumos for a in self.acabados)
+
+
+@dataclass
 class RelatorioBaixaFichaTecnica:
-    """Relatório: por produto acabado, o que compôs cada produção."""
+    """Relatório de baixa de ficha técnica.
+
+    - Sem filtro: agrupado por entrada (entradas)
+    - Com filtro de produto: agrupado por produto acabado (grupos)
+    """
     data_inicial: str = ""
     data_final: str = ""
+    ficha_produto_id: int | None = None
+    entradas: list[EntradaBaixa] = field(default_factory=list)
     grupos: list[GrupoAcabado] = field(default_factory=list)
 
     @property
+    def tem_dados(self) -> bool:
+        return bool(self.entradas)
+
+    @property
     def total_geral(self) -> float:
-        return sum(g.total_insumos for g in self.grupos)
+        return sum(e.total for e in self.entradas)

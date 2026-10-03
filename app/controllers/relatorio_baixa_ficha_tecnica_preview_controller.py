@@ -2,6 +2,7 @@
 """Pré-visualização do relatório de baixa de ficha técnica.
 
 Mostra os dados no mesmo layout do PDF e permite gerar PDF, XLSX ou CSV.
+Sem filtro: agrupado por entrada. Com filtro: agrupado por acabado.
 """
 from datetime import datetime
 
@@ -65,16 +66,85 @@ class RelBaixaFichaTecnicaPreviewController(QDialog):
         ]
         if self._periodo:
             partes.append(f"<p style='color:{CINZA};'>{self._periodo}</p>")
-        if not self._relatorio.grupos:
+        if not self._relatorio.tem_dados:
             partes.append("<p>Nenhuma baixa de ficha técnica no período.</p>")
 
-        for grupo in self._relatorio.grupos:
-            partes.append(self._html_grupo(grupo))
+        if self._relatorio.ficha_produto_id:
+            # modo filtrado: agrupado por produto acabado
+            for grupo in self._relatorio.grupos:
+                partes.append(self._html_grupo(grupo))
+        else:
+            # modo geral: agrupado por entrada
+            for entrada in self._relatorio.entradas:
+                partes.append(self._html_entrada(entrada))
         partes.append(self._html_total_geral())
         self.ui.txt_Visualizacao.setHtml("".join(partes))
 
     @staticmethod
-    def _html_grupo(grupo) -> str:
+    def _html_tabela_itens(itens, total_texto: str, total_valor: float) -> str:
+        html = [
+            "<table width='100%' cellspacing='0' cellpadding='4' "
+            f"style='border:1px solid {LINHA};font-size:9pt;"
+            f"color:{TEXTO};margin-top:4px;'>",
+            f"<tr style='background-color:{ZEBRA};color:{AZUL};'>"
+            "<th align='left'>Código</th><th align='left'>Insumo</th>"
+            "<th align='right'>Qtde</th><th align='right'>Custo</th>"
+            "<th align='right'>Total</th><th align='left'>Origem</th></tr>",
+        ]
+        if itens:
+            for indice, item in enumerate(itens):
+                fundo = ZEBRA if indice % 2 else "#FFFFFF"
+                html.append(
+                    f"<tr style='background-color:{fundo};'>"
+                    f"<td>{item.codigo}</td><td>{item.descricao}</td>"
+                    f"<td align='right'>{_numero(item.quantidade_sacos)}</td>"
+                    f"<td align='right'>{_moeda(item.custo)}</td>"
+                    f"<td align='right'>{_moeda(item.total)}</td>"
+                    f"<td>Ent. Nº {item.origem_sequencia}</td></tr>"
+                )
+        else:
+            html.append(
+                "<tr><td colspan='6' style='color:#888888;'>"
+                "sem ficha técnica cadastrada</td></tr>")
+        html.append(
+            "<tr style='background-color:#E8EDF2;font-weight:bold;"
+            f"color:{TEXTO};'>"
+            f"<td colspan='5'>{total_texto}</td>"
+            f"<td align='right'>{_moeda(total_valor)}</td></tr>"
+            "</table>"
+        )
+        return "".join(html)
+
+    @classmethod
+    def _html_entrada(cls, entrada) -> str:
+        titulo = (f"<b>ENTRADA Nº {entrada.sequencia}</b> · "
+                  f"{_data_br(entrada.data_entrada)}")
+        if entrada.motivo_descricao:
+            titulo += f" · {entrada.motivo_descricao}"
+        html = [
+            "<table width='100%' cellspacing='0' cellpadding='0'>"
+            f"<tr><td style='background-color:{AZUL};color:#FFFFFF;"
+            "padding:6px 8px;font-size:10pt;'>"
+            f"{titulo}</td></tr></table>",
+        ]
+        for ac in entrada.acabados:
+            html.append(
+                f"<p style='color:{CINZA};margin-top:6px;margin-bottom:3px;'>"
+                f"<b>{ac.codigo} - {ac.descricao}</b> · produzido: "
+                f"<b>{_numero(ac.quantidade)}</b> sacos</p>"
+            )
+            html.append(cls._html_tabela_itens(
+                ac.itens, f"Total de insumos {ac.codigo}",
+                ac.total_insumos))
+        html.append(
+            "<p style='margin:2px 0 8px 0;'>"
+            f"<b>TOTAL DA ENTRADA Nº {entrada.sequencia}: "
+            f"{_moeda(entrada.total)}</b></p>"
+        )
+        return "".join(html)
+
+    @classmethod
+    def _html_grupo(cls, grupo) -> str:
         html = [
             "<table width='100%' cellspacing='0' cellpadding='0'>"
             f"<tr><td style='background-color:{AZUL};color:#FFFFFF;"
@@ -82,44 +152,18 @@ class RelBaixaFichaTecnicaPreviewController(QDialog):
             f"<b>{grupo.codigo} - {grupo.descricao}</b></td></tr></table>",
         ]
         for producao in grupo.producoes:
-            html.extend([
+            html.append(
                 f"<p style='color:{CINZA};margin-top:6px;margin-bottom:3px;'>"
                 f"<b>Entrada Nº {producao.sequencia}</b> · "
                 f"{_data_br(producao.data_entrada)} · produzido: "
-                f"<b>{_numero(producao.quantidade)}</b> sacos</p>",
-                "<table width='100%' cellspacing='0' cellpadding='4' "
-                f"style='border:1px solid {LINHA};font-size:9pt;"
-                f"color:{TEXTO};'>",
-                f"<tr style='background-color:{ZEBRA};color:{AZUL};'>"
-                "<th align='left'>Código</th><th align='left'>Insumo</th>"
-                "<th align='right'>Qtde</th><th align='right'>Custo</th>"
-                "<th align='right'>Total</th><th align='left'>Origem</th></tr>",
-            ])
-            if producao.itens:
-                for indice, item in enumerate(producao.itens):
-                    fundo = ZEBRA if indice % 2 else "#FFFFFF"
-                    html.append(
-                        f"<tr style='background-color:{fundo};'>"
-                        f"<td>{item.codigo}</td><td>{item.descricao}</td>"
-                        f"<td align='right'>{_numero(item.quantidade_sacos)}</td>"
-                        f"<td align='right'>{_moeda(item.custo)}</td>"
-                        f"<td align='right'>{_moeda(item.total)}</td>"
-                        f"<td>Ent. Nº {item.origem_sequencia}</td></tr>"
-                    )
-            else:
-                html.append(
-                    "<tr><td colspan='6' style='color:#888888;'>"
-                    "sem ficha técnica cadastrada</td></tr>")
-            html.append(
-                "<tr style='background-color:#E8EDF2;font-weight:bold;"
-                f"color:{TEXTO};'>"
-                "<td colspan='5'>Total de insumos da produção</td>"
-                f"<td align='right'>{_moeda(producao.total_insumos)}"
-                "</td></tr></table>"
+                f"<b>{_numero(producao.quantidade)}</b> sacos</p>"
             )
+            html.append(cls._html_tabela_itens(
+                producao.itens, "Total de insumos da produção",
+                producao.total_insumos))
         html.append(
             "<p style='margin:2px 0 8px 0;'>"
-            f"<b>Total dos insumos {grupo.codigo}: "
+            f"<b>TOTAL DOS INSUMOS {grupo.codigo}: "
             f"{_moeda(grupo.total_insumos)}</b></p>"
         )
         return "".join(html)
@@ -130,7 +174,7 @@ class RelBaixaFichaTecnicaPreviewController(QDialog):
             f"style='border:1px solid {LINHA};font-size:9pt;color:{TEXTO};'>"
             "<tr style='background-color:#E8EDF2;font-weight:bold;"
             f"color:{TEXTO};'>"
-            "<td colspan='5'>Total geral</td>"
+            "<td colspan='5'>TOTAL GERAL</td>"
             f"<td align='right'>{_moeda(self._relatorio.total_geral)}</td></tr>"
             "</table>"
         )

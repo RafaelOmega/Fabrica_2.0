@@ -58,9 +58,12 @@ class RelBaixaFichaTecnicaController(QWidget):
             ficha = dialogo.ficha_selecionada()
             if ficha:
                 self._ficha_produto_id = ficha.produto_id
-                descricao = self._service.descricao_da_ficha(ficha.id)
+                descricao = (self._service.descricao_da_ficha(ficha.id)
+                             or getattr(ficha, "descricao_produto", "")
+                             or ficha.codigo_produto)
+                # padrão dos outros relatórios: código - descrição
                 self.ui.txt_Ficha_Tecnica.setText(
-                    descricao or ficha.codigo_produto)
+                    f"{ficha.codigo_produto} - {descricao}")
 
     # ---------------- filtro ----------------
 
@@ -86,7 +89,7 @@ class RelBaixaFichaTecnicaController(QWidget):
                 f"Não foi possível gerar o relatório:\n{exc}")
             return
 
-        if not relatorio.grupos:
+        if not relatorio.tem_dados:
             QMessageBox.information(
                 self, "Relatório",
                 "Nenhuma baixa de ficha técnica no período.")
