@@ -3,7 +3,8 @@
 
 Layout seguindo o padrão dos demais relatórios:
   - Cabeçalho fixo: título, período e emissão
-  - Uma seção por entrada de produção: acabado(s) + itens baixados
+  - Agrupado por produto acabado, com cada produção (entrada de origem)
+    e os insumos que compuseram o lote
   - Rodapé fixo: sistema à esquerda, "Página X de Y" à direita
 """
 from datetime import datetime
@@ -117,16 +118,15 @@ def _barra_azul(texto: str) -> Table:
     return barra
 
 
-def _tabela_padrao(titulos: list[str], linhas: list[list],
-                   total_texto: str, total_valor: float) -> Table:
-    dados = [titulos] + linhas + [
-        ["", "", Paragraph(f"<b>{total_texto}</b>", _ESTILO_TOTAL), "",
-         Paragraph(f"<b>{_moeda(total_valor)}</b>", _ESTILO_TOTAL)],
+def _tabela_composicao(linhas: list[list], total: float) -> Table:
+    dados = [["Código", "Insumo", "Qtde", "Custo", "Total", "Origem"]] + linhas + [
+        ["", "", Paragraph("<b>Total da produção</b>", _ESTILO_TOTAL), "",
+         Paragraph(f"<b>{_moeda(total)}</b>", _ESTILO_TOTAL), ""],
     ]
     tabela = Table(
         dados,
-        colWidths=[2.2 * cm, _LARGURA - 9.8 * cm, 2.4 * cm, 2.6 * cm,
-                   2.6 * cm],
+        colWidths=[1.9 * cm, _LARGURA - 14.3 * cm, 2.3 * cm, 2.5 * cm,
+                   2.5 * cm, 2.4 * cm],
         repeatRows=1,
     )
     tabela.setStyle(TableStyle([
@@ -140,52 +140,39 @@ def _tabela_padrao(titulos: list[str], linhas: list[list],
         ("GRID", (0, 0), (-1, -2), 0.4, LINHA),
         ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E8EDF2")),
         ("SPAN", (0, -1), (2, -1)),
-        ("ALIGN", (3, 0), (4, -1), "RIGHT"),
+        ("ALIGN", (2, 0), (4, -1), "RIGHT"),
         ("TOPPADDING", (0, 0), (-1, -1), 4),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]))
     return tabela
 
 
-def _secao_entrada(baixa) -> list:
-    titulo = (f"<b>Entrada Nº {baixa.sequencia}</b> · "
-              f"{_data_br(baixa.data_entrada)}")
-    if baixa.motivo_descricao:
-        titulo += f" · {baixa.motivo_descricao}"
-    story = [_barra_azul(titulo), Spacer(1, 0.15 * cm)]
-
-    if baixa.acabados:
-        linhas = []
-        for ac in baixa.acabados:
-            linhas.append([
-                ac.codigo,
-                Paragraph(ac.descricao, _ESTILO_CELULA),
-                _numero(ac.quantidade),
-                _moeda(ac.custo),
-                _moeda(ac.total),
-            ])
-        story.append(_tabela_padrao(
-            ["Código", "Acabado", "Qtde", "Custo", "Total"],
-            linhas, "Total Acabados",
-            sum(ac.total for ac in baixa.acabados)))
+def _secao_grupo(grupo) -> list:
+    story = [_barra_azul(f"<b>{grupo.codigo} - {grupo.descricao}</b>")]
+    for producao in grupo.producoes:
         story.append(Spacer(1, 0.2 * cm))
+        story.append(Paragraph(
+            f"<b>Entrada Nº {producao.sequencia}</b> · "
+            f"{_data_br(producao.data_entrada)} · produzido: "
+            f"<b>{_numero(producao.quantidade)}</b> sacos",
+            ParagraphStyle("origem", parent=_ESTILO_CELULA,
+                           textColor=CINZA_TXT)))
+        story.append(Spacer(1, 0.1 * cm))
 
-    linhas_itens = []
-    for item in baixa.itens:
-        linhas_itens.append([
-            item.codigo,
-            Paragraph(item.descricao, _ESTILO_CELULA),
-            _numero(item.quantidade),
-            _moeda(item.custo),
-            _moeda(item.total),
-        ])
-    if not linhas_itens:
-        linhas_itens.append([
-            "", Paragraph("sem itens baixados", _ESTILO_CELULA),
-            "", "", ""])
-    story.append(_tabela_padrao(
-        ["Código", "Insumo", "Qtde", "Custo", "Total"],
-        linhas_itens, "Total da Baixa", baixa.total))
+        linhas = []
+        for item in producao.itens:
+            linhas.append([
+                item.codigo,
+                Paragraph(item.descricao, _ESTILO_CELULA),
+                _numero(item.quantidade_sacos),
+                _moeda(item.custo),
+                _moeda(item.total),
+                f"Ent. Nº {item.origem_sequencia}",
+            ])
+        if not linhas:
+            linhas.append(["", Paragraph("sem ficha técnica", _ESTILO_CELULA),
+                           "", "", "", ""])
+        story.append(_tabela_composicao(linhas, producao.total_insumos))
     return story
 
 
@@ -209,14 +196,13 @@ def gerar_pdf_baixa_ficha_tecnica(relatorio, caminho: str,
     ])
 
     story: list = []
-    if not relatorio.linhas:
+    if not relatorio.grupos:
         story.append(Paragraph("Nenhuma baixa de ficha técnica no período.",
                                _ESTILO_CELULA))
-    for baixa in relatorio.linhas:
-        story.append(KeepTogether(_secao_entrada(baixa)))
+    for grupo in relatorio.grupos:
+        story.append(KeepTogether(_secao_grupo(grupo)))
         story.append(Spacer(1, 0.5 * cm))
 
-    # total geral
     story.append(Paragraph(
         f"<b>Total geral: {_moeda(relatorio.total_geral)}</b>",
         _ESTILO_TOTAL))

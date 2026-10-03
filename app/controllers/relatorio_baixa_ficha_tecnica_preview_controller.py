@@ -65,77 +65,62 @@ class RelBaixaFichaTecnicaPreviewController(QDialog):
         ]
         if self._periodo:
             partes.append(f"<p style='color:{CINZA};'>{self._periodo}</p>")
-        if not self._relatorio.linhas:
+        if not self._relatorio.grupos:
             partes.append("<p>Nenhuma baixa de ficha técnica no período.</p>")
 
-        for baixa in self._relatorio.linhas:
-            partes.append(self._html_baixa(baixa))
+        for grupo in self._relatorio.grupos:
+            partes.append(self._html_grupo(grupo))
         partes.append(self._html_total_geral())
         self.ui.txt_Visualizacao.setHtml("".join(partes))
 
     @staticmethod
-    def _html_baixa(baixa) -> str:
-        titulo = (f"<b>Entrada Nº {baixa.sequencia}</b> · "
-                  f"{_data_br(baixa.data_entrada)}")
-        if baixa.motivo_descricao:
-            titulo += f" · {baixa.motivo_descricao}"
+    def _html_grupo(grupo) -> str:
         html = [
             "<table width='100%' cellspacing='0' cellpadding='0'>"
             f"<tr><td style='background-color:{AZUL};color:#FFFFFF;"
             "padding:6px 8px;font-size:10pt;'>"
-            f"{titulo}</td></tr></table>",
+            f"<b>{grupo.codigo} - {grupo.descricao}</b></td></tr></table>",
         ]
-        # produtos acabados
-        if baixa.acabados:
+        for producao in grupo.producoes:
             html.extend([
+                f"<p style='color:{CINZA};margin-top:6px;margin-bottom:3px;'>"
+                f"<b>Entrada Nº {producao.sequencia}</b> · "
+                f"{_data_br(producao.data_entrada)} · produzido: "
+                f"<b>{_numero(producao.quantidade)}</b> sacos</p>",
                 "<table width='100%' cellspacing='0' cellpadding='4' "
                 f"style='border:1px solid {LINHA};font-size:9pt;"
-                f"color:{TEXTO};margin-top:4px;'>",
+                f"color:{TEXTO};'>",
                 f"<tr style='background-color:{ZEBRA};color:{AZUL};'>"
-                "<th align='left'>Código</th><th align='left'>Acabado</th>"
+                "<th align='left'>Código</th><th align='left'>Insumo</th>"
                 "<th align='right'>Qtde</th><th align='right'>Custo</th>"
-                "<th align='right'>Total</th></tr>",
+                "<th align='right'>Total</th><th align='left'>Origem</th></tr>",
             ])
-            for indice, ac in enumerate(baixa.acabados):
-                fundo = ZEBRA if indice % 2 else "#FFFFFF"
+            if producao.itens:
+                for indice, item in enumerate(producao.itens):
+                    fundo = ZEBRA if indice % 2 else "#FFFFFF"
+                    html.append(
+                        f"<tr style='background-color:{fundo};'>"
+                        f"<td>{item.codigo}</td><td>{item.descricao}</td>"
+                        f"<td align='right'>{_numero(item.quantidade_sacos)}</td>"
+                        f"<td align='right'>{_moeda(item.custo)}</td>"
+                        f"<td align='right'>{_moeda(item.total)}</td>"
+                        f"<td>Ent. Nº {item.origem_sequencia}</td></tr>"
+                    )
+            else:
                 html.append(
-                    f"<tr style='background-color:{fundo};'>"
-                    f"<td>{ac.codigo}</td><td>{ac.descricao}</td>"
-                    f"<td align='right'>{_numero(ac.quantidade)}</td>"
-                    f"<td align='right'>{_moeda(ac.custo)}</td>"
-                    f"<td align='right'>{_moeda(ac.total)}</td></tr>"
-                )
-            html.append("</table>")
-        # itens baixados
-        html.extend([
-            "<table width='100%' cellspacing='0' cellpadding='4' "
-            f"style='border:1px solid {LINHA};font-size:9pt;"
-            f"color:{TEXTO};margin-top:4px;'>",
-            f"<tr style='background-color:{ZEBRA};color:{AZUL};'>"
-            "<th align='left'>Código</th><th align='left'>Insumo</th>"
-            "<th align='right'>Qtde</th><th align='right'>Custo</th>"
-            "<th align='right'>Total</th></tr>",
-        ])
-        if baixa.itens:
-            for indice, item in enumerate(baixa.itens):
-                fundo = ZEBRA if indice % 2 else "#FFFFFF"
-                html.append(
-                    f"<tr style='background-color:{fundo};'>"
-                    f"<td>{item.codigo}</td><td>{item.descricao}</td>"
-                    f"<td align='right'>{_numero(item.quantidade)}</td>"
-                    f"<td align='right'>{_moeda(item.custo)}</td>"
-                    f"<td align='right'>{_moeda(item.total)}</td></tr>"
-                )
-        else:
+                    "<tr><td colspan='6' style='color:#888888;'>"
+                    "sem ficha técnica cadastrada</td></tr>")
             html.append(
-                "<tr><td colspan='5' style='color:#888888;'>"
-                "sem itens baixados</td></tr>")
+                "<tr style='background-color:#E8EDF2;font-weight:bold;"
+                f"color:{TEXTO};'>"
+                "<td colspan='5'>Total de insumos da produção</td>"
+                f"<td align='right'>{_moeda(producao.total_insumos)}"
+                "</td></tr></table>"
+            )
         html.append(
-            "<tr style='background-color:#E8EDF2;font-weight:bold;"
-            f"color:{TEXTO};'>"
-            "<td colspan='4'>Total da Baixa</td>"
-            f"<td align='right'>{_moeda(baixa.total)}</td></tr>"
-            "</table><br>"
+            "<p style='margin:2px 0 8px 0;'>"
+            f"<b>Total dos insumos {grupo.codigo}: "
+            f"{_moeda(grupo.total_insumos)}</b></p>"
         )
         return "".join(html)
 
@@ -145,7 +130,7 @@ class RelBaixaFichaTecnicaPreviewController(QDialog):
             f"style='border:1px solid {LINHA};font-size:9pt;color:{TEXTO};'>"
             "<tr style='background-color:#E8EDF2;font-weight:bold;"
             f"color:{TEXTO};'>"
-            "<td colspan='4'>Total geral</td>"
+            "<td colspan='5'>Total geral</td>"
             f"<td align='right'>{_moeda(self._relatorio.total_geral)}</td></tr>"
             "</table>"
         )

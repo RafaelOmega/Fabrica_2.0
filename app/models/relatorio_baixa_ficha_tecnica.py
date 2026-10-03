@@ -4,60 +4,68 @@ from dataclasses import dataclass, field
 
 
 @dataclass
-class ItemBaixaFicha:
-    """Insumo baixado de uma ficha técnica (item consumido na produção)."""
+class ItemComposicao:
+    """Insumo consumido para produzir um lote de produto acabado."""
     produto_id: int | None = None
     codigo: str = ""
     descricao: str = ""
-    quantidade: float = 0.0   # quantidade gravada no kardex (sacos ou kg)
-    custo: float = 0.0        # custo unitário do insumo no momento da baixa
+    quantidade_sacos: float = 0.0   # convertido pelo fator da unidade
+    custo: float = 0.0              # custo unitário do insumo
+    origem_entrada_id: int | None = None
+    origem_sequencia: int | None = None
+    origem_data: str = ""
 
     @property
     def total(self) -> float:
-        return self.quantidade * self.custo
+        return self.quantidade_sacos * self.custo
 
 
 @dataclass
-class AcabadoBaixa:
-    """Produto acabado da entrada de produção."""
+class ProducaoAcabado:
+    """Produção de um acabado dentro de uma entrada (origem da baixa)."""
     produto_id: int | None = None
     codigo: str = ""
     descricao: str = ""
-    quantidade: float = 0.0
-    custo: float = 0.0
-
-    @property
-    def total(self) -> float:
-        return self.quantidade * self.custo
-
-
-@dataclass
-class BaixaFichaTecnica:
-    """Uma baixa de ficha técnica = uma entrada de produção."""
+    quantidade: float = 0.0        # sacos produzidos do acabado
+    custo_acabado: float = 0.0
     entrada_id: int | None = None
     sequencia: int | None = None
     data_entrada: str = ""
-    motivo_descricao: str = ""
-    acabados: list[AcabadoBaixa] = field(default_factory=list)
-    itens: list[ItemBaixaFicha] = field(default_factory=list)
+    itens: list[ItemComposicao] = field(default_factory=list)
 
     @property
-    def total(self) -> float:
+    def total_acabado(self) -> float:
+        return self.quantidade * self.custo_acabado
+
+    @property
+    def total_insumos(self) -> float:
         return sum(i.total for i in self.itens)
 
+
+@dataclass
+class GrupoAcabado:
+    """Produto acabado e todas as suas produções no período."""
+    produto_id: int | None = None
+    codigo: str = ""
+    descricao: str = ""
+    producoes: list[ProducaoAcabado] = field(default_factory=list)
+
     @property
-    def acabado_texto(self) -> str:
-        return " | ".join(
-            f"{a.codigo} - {a.descricao}" for a in self.acabados)
+    def total_quantidade(self) -> float:
+        return sum(p.quantidade for p in self.producoes)
+
+    @property
+    def total_insumos(self) -> float:
+        return sum(p.total_insumos for p in self.producoes)
 
 
 @dataclass
 class RelatorioBaixaFichaTecnica:
-    """Relatório de baixas: entrada a entrada, com acabados e itens."""
+    """Relatório: por produto acabado, o que compôs cada produção."""
     data_inicial: str = ""
     data_final: str = ""
-    linhas: list[BaixaFichaTecnica] = field(default_factory=list)
+    grupos: list[GrupoAcabado] = field(default_factory=list)
 
     @property
     def total_geral(self) -> float:
-        return sum(l.total for l in self.linhas)
+        return sum(g.total_insumos for g in self.grupos)

@@ -11,74 +11,71 @@ def _data_br(data_iso: str) -> str:
         return data_iso
 
 
+def _linhas_do_relatorio(relatorio):
+    """Gera linhas planas para exportação."""
+    for grupo in relatorio.grupos:
+        for producao in grupo.producoes:
+            if producao.itens:
+                for item in producao.itens:
+                    yield [
+                        grupo.codigo, grupo.descricao,
+                        producao.sequencia, _data_br(producao.data_entrada),
+                        producao.quantidade,
+                        item.codigo, item.descricao,
+                        item.quantidade_sacos, item.custo, item.total,
+                        f"Ent. Nº {item.origem_sequencia}",
+                    ]
+            else:
+                yield [
+                    grupo.codigo, grupo.descricao,
+                    producao.sequencia, _data_br(producao.data_entrada),
+                    producao.quantidade,
+                    "", "sem ficha técnica", "", "", producao.total_insumos,
+                    f"Ent. Nº {producao.sequencia}",
+                ]
+                yield None  # separador após produção
+            yield None
+        yield None
+
+
 def gerar_xlsx_baixa_ficha_tecnica(relatorio, caminho: str,
                                    periodo: str = "") -> None:
-    """Gera o XLSX (aba Detalhe: uma linha por item baixado)."""
+    """Gera o XLSX (uma linha por insumo consumido)."""
     from openpyxl import Workbook
     from openpyxl.styles import Font
 
     wb = Workbook()
     ws = wb.active
     ws.title = "Detalhe"
-    ws.append(["Sequência", "Data", "Motivo", "Acabado",
-               "Código", "Insumo", "Qtde", "Custo", "Total"])
+    ws.append(["Cód Acabado", "Acabado", "Entrada Nº", "Data",
+               "Qtde Produzida", "Cód Insumo", "Insumo", "Qtde",
+               "Custo", "Total", "Origem"])
     for celula in ws[1]:
         celula.font = Font(bold=True)
 
-    for baixa in relatorio.linhas:
-        primeira = True
-        for item in baixa.itens:
-            ws.append([
-                baixa.sequencia, _data_br(baixa.data_entrada),
-                baixa.motivo_descricao,
-                baixa.acabado_texto if primeira else "",
-                item.codigo, item.descricao,
-                item.quantidade, item.custo, item.total,
-            ])
-            primeira = False
-        if not baixa.itens:
-            ws.append([
-                baixa.sequencia, _data_br(baixa.data_entrada),
-                baixa.motivo_descricao,
-                baixa.acabado_texto,
-                "", "sem itens baixados", "", "", baixa.total,
-            ])
-        ws.append(["", "", "", "Total da Baixa", "", "", "",
-                   "", round(baixa.total, 2)])
-    ws.append(["", "", "", "Total geral", "", "", "", "",
+    for linha in _linhas_do_relatorio(relatorio):
+        if linha is None:
+            continue
+        ws.append(linha)
+    ws.append(["", "", "", "", "", "", "", "", "", "Total geral",
                round(relatorio.total_geral, 2)])
-
     wb.save(caminho)
 
 
 def gerar_csv_baixa_ficha_tecnica(relatorio, caminho: str,
                                   periodo: str = "") -> None:
-    """Gera o CSV do relatório (detalhe)."""
+    """Gera o CSV (detalhe)."""
     import csv
 
     with open(caminho, "w", newline="", encoding="utf-8-sig") as fh:
         writer = csv.writer(fh, delimiter=";")
-        writer.writerow(["Sequência", "Data", "Motivo", "Acabado",
-                         "Código", "Insumo", "Qtde", "Custo", "Total"])
-        for baixa in relatorio.linhas:
-            primeira = True
-            for item in baixa.itens:
-                writer.writerow([
-                    baixa.sequencia, _data_br(baixa.data_entrada),
-                    baixa.motivo_descricao,
-                    baixa.acabado_texto if primeira else "",
-                    item.codigo, item.descricao,
-                    item.quantidade, item.custo, item.total,
-                ])
-                primeira = False
-            if not baixa.itens:
-                writer.writerow([
-                    baixa.sequencia, _data_br(baixa.data_entrada),
-                    baixa.motivo_descricao,
-                    baixa.acabado_texto,
-                    "", "sem itens baixados", "", "", baixa.total,
-                ])
-            writer.writerow(["", "", "", "Total da Baixa", "",
-                             "", "", "", round(baixa.total, 2)])
-        writer.writerow(["", "", "", "Total geral", "",
-                         "", "", "", round(relatorio.total_geral, 2)])
+        writer.writerow(["Cód Acabado", "Acabado", "Entrada Nº", "Data",
+                         "Qtde Produzida", "Cód Insumo", "Insumo", "Qtde",
+                         "Custo", "Total", "Origem"])
+        for linha in _linhas_do_relatorio(relatorio):
+            if linha is None:
+                writer.writerow([])
+                continue
+            writer.writerow(linha)
+        writer.writerow(["", "", "", "", "", "", "", "", "", "Total geral",
+                         round(relatorio.total_geral, 2)])
