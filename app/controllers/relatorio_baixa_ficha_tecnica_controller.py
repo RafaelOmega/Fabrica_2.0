@@ -86,7 +86,7 @@ class RelBaixaFichaTecnicaController(QWidget):
                 f"Não foi possível gerar o relatório:\n{exc}")
             return
 
-        if not relatorio.linhas:
+        if not relatorio.grupos:
             QMessageBox.information(
                 self, "Relatório",
                 "Nenhuma baixa de ficha técnica no período.")
