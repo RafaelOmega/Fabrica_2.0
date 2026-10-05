@@ -710,9 +710,11 @@ class EntradaController(QWidget):
     def _excluir(self):
         if self._service is None or self._entrada_id is None:
             return
+        sequencia = (self.ui.txt_Sequencia.text().strip()
+                     or str(self._entrada_id))
         resposta = QMessageBox.question(
             self, "Confirmar exclusão",
-            f"Excluir a entrada '{self._entrada_id}' e todos os seus itens?",
+            f"Excluir a entrada '{sequencia}' e todos os seus itens?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )

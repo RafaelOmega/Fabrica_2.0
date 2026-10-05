@@ -86,10 +86,14 @@ class RelEntradaController(QWidget):
                 self, "Relatório", "Nenhuma entrada no período.")
             return
 
-        periodo = (
-            f"Período: {self.ui.dt_Data_Inicial.date().toString('dd/MM/yyyy')}"
-            f" a {self.ui.dt_Data_Final.date().toString('dd/MM/yyyy')}"
-        )
+        if self._entrada_id:
+            # entrada específica: a busca é por id, o período não se aplica
+            periodo = f"Entrada: {self.ui.txt_Entrada.text().strip()}"
+        else:
+            periodo = (
+                f"Período: {self.ui.dt_Data_Inicial.date().toString('dd/MM/yyyy')}"
+                f" a {self.ui.dt_Data_Final.date().toString('dd/MM/yyyy')}"
+            )
 
         from app.controllers.relatorio_entrada_preview_controller import (
             RelEntradaPreviewController,
