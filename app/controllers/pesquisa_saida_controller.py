@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Controller da pesquisa de saídas."""
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import QDialog, QMessageBox
 
@@ -81,8 +81,11 @@ class PesquisaSaidaController(QDialog):
             if len(data) == 10:
                 ano, mes, dia = data.split("-")
                 data = f"{dia}/{mes}/{ano}"
+            item_seq = QStandardItem(str(saida.sequencia or saida.id))
+            # id guardado no item: a seleção continua localizando por id
+            item_seq.setData(saida.id, Qt.ItemDataRole.UserRole)
             self._modelo.appendRow([
-                QStandardItem(str(saida.id)),
+                item_seq,
                 QStandardItem(data),
                 QStandardItem(_moeda(saida.total)),
             ])
@@ -96,8 +99,11 @@ class PesquisaSaidaController(QDialog):
         item = self._modelo.item(linha, 0)
         if item is None or self._service is None:
             return None
+        saida_id = item.data(Qt.ItemDataRole.UserRole)
+        if saida_id is None:
+            return None
         try:
-            return self._service.buscar_por_id(int(item.text()))
+            return self._service.buscar_por_id(int(saida_id))
         except Exception as exc:
             logger.exception("Falha ao carregar saída selecionada")
             QMessageBox.critical(

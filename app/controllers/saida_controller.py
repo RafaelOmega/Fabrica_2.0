@@ -598,9 +598,11 @@ class SaidaController(QWidget):
     def _excluir(self):
         if self._service is None or self._saida_id is None:
             return
+        sequencia = (self.ui.txt_Sequencia.text().strip()
+                     or str(self._saida_id))
         resposta = QMessageBox.question(
             self, "Confirmar exclusão",
-            f"Excluir a saída '{self._saida_id}' e todos os seus itens?",
+            f"Excluir a saída '{sequencia}' e todos os seus itens?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -619,7 +621,6 @@ class SaidaController(QWidget):
             self, "Sucesso", "Saída excluída com sucesso.")
         self._limpar_campos()
         self.ui.txt_Sequencia.setFocus()
-
     # ---------------- campos ----------------
 
     def _limpar_campos(self):
