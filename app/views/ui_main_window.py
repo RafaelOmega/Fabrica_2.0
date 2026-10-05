@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_windowuWfaKN.ui'
+## Form generated from reading UI file 'main_windowVOQZli.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -107,6 +107,17 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addWidget(self.dt_Hora_Atual, 0, Qt.AlignmentFlag.AlignHCenter|Qt.AlignmentFlag.AlignVCenter)
 
+        self.label = QLabel(self.frm_StatusBar)
+        self.label.setObjectName(u"label")
+        self.label.setMinimumSize(QSize(0, 30))
+        self.label.setMaximumSize(QSize(16777215, 30))
+
+        self.horizontalLayout.addWidget(self.label)
+
+        self.horizontalSpacer_2 = QSpacerItem(5, 30, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer_2)
+
 
         self.verticalLayout.addWidget(self.frm_StatusBar)
 
@@ -158,6 +169,7 @@ class Ui_MainWindow(object):
         self.actionBaixaFichaTecnica.setText(QCoreApplication.translate("MainWindow", u"Baixa Ficha Tecnica", None))
         self.actionRelEntradas.setText(QCoreApplication.translate("MainWindow", u"Entradas", None))
         self.lb_Comandos.setText("")
+        self.label.setText(QCoreApplication.translate("MainWindow", u"Vers\u00e3o 2.0.0", None))
         self.menuCadastros.setTitle(QCoreApplication.translate("MainWindow", u"Cadastros", None))
         self.menuLan_amentos.setTitle(QCoreApplication.translate("MainWindow", u"Lan\u00e7amentos", None))
         self.menuRelatorios.setTitle(QCoreApplication.translate("MainWindow", u"Relat\u00f3rios", None))
