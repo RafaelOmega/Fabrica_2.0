@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Controller da pesquisa de entradas."""
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import QDialog, QMessageBox
 
@@ -81,14 +81,18 @@ class PesquisaEntradaController(QDialog):
             if len(data) == 10:
                 ano, mes, dia = data.split("-")
                 data = f"{dia}/{mes}/{ano}"
+            item_seq = QStandardItem(str(entrada.sequencia or entrada.id))
+            # id guardado no item: a seleção continua localizando por id
+            item_seq.setData(entrada.id, Qt.ItemDataRole.UserRole)
             self._modelo.appendRow([
-                QStandardItem(str(entrada.id)),
+                item_seq,
                 QStandardItem(data),
                 QStandardItem(
                     entrada.motivo_descricao or entrada.motivo_codigo),
                 QStandardItem(_moeda(entrada.total)),
             ])
-        ajustar_larguras(self.ui.tb_Entradas, coluna_stretch=COLUNA_STRETCH)
+        ajustar_larguras(
+            self.ui.tb_Entradas, coluna_stretch=COLUNA_STRETCH)
 
     def entrada_selecionada(self) -> Entrada | None:
         indice = self.ui.tb_Entradas.currentIndex()
@@ -98,8 +102,11 @@ class PesquisaEntradaController(QDialog):
         item = self._modelo.item(linha, 0)
         if item is None or self._service is None:
             return None
+        entrada_id = item.data(Qt.ItemDataRole.UserRole)
+        if entrada_id is None:
+            return None
         try:
-            return self._service.buscar_por_id(int(item.text()))
+            return self._service.buscar_por_id(int(entrada_id))
         except Exception as exc:
             logger.exception("Falha ao carregar entrada selecionada")
             QMessageBox.critical(
