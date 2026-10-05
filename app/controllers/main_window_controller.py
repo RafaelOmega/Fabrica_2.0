@@ -13,6 +13,7 @@ from app.controllers.cad_unidade_medida_controller import (
     CadUnidadeMedidaController,
 )
 
+from app.controllers.relatorio_entrada_controller import RelEntradaController
 from app.controllers.relatorio_ficha_tecnica_controller import (
     RelFichaTecnicaController,
 )
@@ -62,6 +63,8 @@ class MainWindowController(QMainWindow):
         self._criadores["unidade_medida"] = lambda pai: CadUnidadeMedidaController(
             pai)
 
+        self._criadores["rel_entradas"] = (
+            lambda pai: RelEntradaController(pai))
         self._criadores["rel_fichas_tecnicas"] = (
             lambda pai: RelFichaTecnicaController(pai))
         self._criadores["ficha_kardex"] = lambda pai: RelKardexController(pai)
@@ -94,6 +97,7 @@ class MainWindowController(QMainWindow):
             "saida":          (self.ui.actionSaida, "Saída"),
             "estoque":        (self.ui.actionEstoque, "Estoque"),
             "ficha_kardex":   (self.ui.actionFichaKardexProduto, "Ficha Kardex do Produto"),
+            "rel_entradas":   (self.ui.actionRelEntradas, "Relatório de Entradas"),
             "rel_fichas_tecnicas": (
                 self.ui.actionRel_Fichas_Tecnicas, "Relatório de Fichas Técnicas"),
             "mao_obra": (self.ui.actionMaoObra, "Relatório de Mão de Obra"),

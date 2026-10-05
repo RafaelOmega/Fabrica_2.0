@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_windowhMCbfO.ui'
+## Form generated from reading UI file 'main_windowuWfaKN.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -53,6 +53,8 @@ class Ui_MainWindow(object):
         self.actionMaoObra.setObjectName(u"actionMaoObra")
         self.actionBaixaFichaTecnica = QAction(MainWindow)
         self.actionBaixaFichaTecnica.setObjectName(u"actionBaixaFichaTecnica")
+        self.actionRelEntradas = QAction(MainWindow)
+        self.actionRelEntradas.setObjectName(u"actionRelEntradas")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -129,6 +131,7 @@ class Ui_MainWindow(object):
         self.menuCadastros.addAction(self.actionUnidadeMedida)
         self.menuLan_amentos.addAction(self.actionEntrada)
         self.menuLan_amentos.addAction(self.actionSaida)
+        self.menuRelatorios.addAction(self.actionRelEntradas)
         self.menuRelatorios.addAction(self.actionEstoque)
         self.menuRelatorios.addAction(self.actionFichaKardexProduto)
         self.menuRelatorios.addAction(self.actionRel_Fichas_Tecnicas)
@@ -153,6 +156,7 @@ class Ui_MainWindow(object):
         self.actionUnidadeMedida.setText(QCoreApplication.translate("MainWindow", u"Unidade de Medida", None))
         self.actionMaoObra.setText(QCoreApplication.translate("MainWindow", u"M\u00e3o de Obra", None))
         self.actionBaixaFichaTecnica.setText(QCoreApplication.translate("MainWindow", u"Baixa Ficha Tecnica", None))
+        self.actionRelEntradas.setText(QCoreApplication.translate("MainWindow", u"Entradas", None))
         self.lb_Comandos.setText("")
         self.menuCadastros.setTitle(QCoreApplication.translate("MainWindow", u"Cadastros", None))
         self.menuLan_amentos.setTitle(QCoreApplication.translate("MainWindow", u"Lan\u00e7amentos", None))

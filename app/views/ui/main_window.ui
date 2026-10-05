@@ -186,6 +186,7 @@
     <property name="title">
      <string>Relatórios</string>
     </property>
+    <addaction name="actionRelEntradas"/>
     <addaction name="actionEstoque"/>
     <addaction name="actionFichaKardexProduto"/>
     <addaction name="actionRel_Fichas_Tecnicas"/>
@@ -249,6 +250,11 @@
   <action name="actionBaixaFichaTecnica">
    <property name="text">
     <string>Baixa Ficha Tecnica</string>
+   </property>
+  </action>
+  <action name="actionRelEntradas">
+   <property name="text">
+    <string>Entradas</string>
    </property>
   </action>
  </widget>
