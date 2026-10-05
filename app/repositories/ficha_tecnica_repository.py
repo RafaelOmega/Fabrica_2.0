@@ -82,14 +82,19 @@ class FichaTecnicaRepository:
         with self._conn:
             with self._conn.cursor() as cur:
                 cur.execute(
-                    f"SELECT id, {_COLUNAS_FICHA} "
-                    "FROM fichas_tecnicas WHERE id = %s",
+                    """
+                    SELECT f.id, f.produto_id, f.codigo_produto,
+                           f.sacos_batida, COALESCE(p.descricao, '')
+                      FROM fichas_tecnicas f
+                      LEFT JOIN produtos p ON p.id = f.produto_id
+                     WHERE f.id = %s
+                    """,
                     (ficha_id,),
                 )
                 linha = cur.fetchone()
                 if not linha:
                     return None
-                ficha = self._linha_para_ficha(linha)
+                ficha = self._linha_para_ficha(linha[:4], linha[4] or "")
                 ficha.itens = self._buscar_itens(cur, ficha.id)
         return ficha
 

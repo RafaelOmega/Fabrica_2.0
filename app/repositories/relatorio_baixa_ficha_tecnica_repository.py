@@ -78,18 +78,34 @@ class RelatorioBaixaFichaTecnicaRepository:
                 dados_entradas = {l[0]: l for l in entradas}
 
                 # 2) acabados produzidos em cada entrada
-                cur.execute(
-                    """
-                    SELECT ie.entrada_id, ie.produto_id, p.codigo,
-                           p.descricao, ie.quantidade, ie.custo
-                      FROM itens_entrada ie
-                      LEFT JOIN produtos p ON p.id = ie.produto_id
-                     WHERE ie.entrada_id = ANY(%s)
-                       AND ie.produto_id IS NOT NULL
-                     ORDER BY ie.entrada_id, ie.id
-                    """,
-                    (ids_entradas,),
-                )
+                #    (com filtro, só o produto selecionado)
+                if ficha_produto_id:
+                    cur.execute(
+                        """
+                        SELECT ie.entrada_id, ie.produto_id, p.codigo,
+                               p.descricao, ie.quantidade, ie.custo
+                          FROM itens_entrada ie
+                          LEFT JOIN produtos p ON p.id = ie.produto_id
+                         WHERE ie.entrada_id = ANY(%s)
+                           AND ie.produto_id IS NOT NULL
+                           AND ie.produto_id = %s
+                         ORDER BY ie.entrada_id, ie.id
+                        """,
+                        (ids_entradas, ficha_produto_id),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        SELECT ie.entrada_id, ie.produto_id, p.codigo,
+                               p.descricao, ie.quantidade, ie.custo
+                          FROM itens_entrada ie
+                          LEFT JOIN produtos p ON p.id = ie.produto_id
+                         WHERE ie.entrada_id = ANY(%s)
+                           AND ie.produto_id IS NOT NULL
+                         ORDER BY ie.entrada_id, ie.id
+                        """,
+                        (ids_entradas,),
+                    )
                 acabados = cur.fetchall()
                 if not acabados:
                     return relatorio
