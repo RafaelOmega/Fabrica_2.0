@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'relatorio_entradaLhCmxQ.ui'
+## Form generated from reading UI file 'relatorio_entradaOCMfnF.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -16,14 +16,14 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QDateEdit, QFrame, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QSizePolicy,
-    QSpacerItem, QVBoxLayout, QWidget)
+    QLabel, QLineEdit, QPushButton, QRadioButton,
+    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
 
 class Ui_Rel_Entrada(object):
     def setupUi(self, Rel_Entrada):
         if not Rel_Entrada.objectName():
             Rel_Entrada.setObjectName(u"Rel_Entrada")
-        Rel_Entrada.resize(410, 136)
+        Rel_Entrada.resize(566, 233)
         font = QFont()
         font.setFamilies([u"Segoe UI Semibold"])
         font.setPointSize(10)
@@ -90,30 +90,86 @@ class Ui_Rel_Entrada(object):
         self.frm_Codigo.setObjectName(u"frm_Codigo")
         self.frm_Codigo.setFrameShape(QFrame.Shape.StyledPanel)
         self.frm_Codigo.setFrameShadow(QFrame.Shadow.Raised)
-        self.horizontalLayout_2 = QHBoxLayout(self.frm_Codigo)
-        self.horizontalLayout_2.setSpacing(5)
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.horizontalLayout_2.setContentsMargins(5, 5, 5, 5)
-        self.lb_Entrada = QLabel(self.frm_Codigo)
+        self.verticalLayout_2 = QVBoxLayout(self.frm_Codigo)
+        self.verticalLayout_2.setSpacing(5)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.verticalLayout_2.setContentsMargins(5, 5, 5, 5)
+        self.frame_2 = QFrame(self.frm_Codigo)
+        self.frame_2.setObjectName(u"frame_2")
+        self.frame_2.setFrameShape(QFrame.Shape.StyledPanel)
+        self.frame_2.setFrameShadow(QFrame.Shadow.Raised)
+        self.horizontalLayout_5 = QHBoxLayout(self.frame_2)
+        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
+        self.lb_Entrada = QLabel(self.frame_2)
         self.lb_Entrada.setObjectName(u"lb_Entrada")
         self.lb_Entrada.setMinimumSize(QSize(0, 30))
         self.lb_Entrada.setMaximumSize(QSize(16777215, 30))
 
-        self.horizontalLayout_2.addWidget(self.lb_Entrada)
+        self.horizontalLayout_5.addWidget(self.lb_Entrada)
 
-        self.txt_Entrada = QLineEdit(self.frm_Codigo)
+        self.txt_Entrada = QLineEdit(self.frame_2)
         self.txt_Entrada.setObjectName(u"txt_Entrada")
         self.txt_Entrada.setMinimumSize(QSize(0, 30))
         self.txt_Entrada.setMaximumSize(QSize(16777215, 30))
 
-        self.horizontalLayout_2.addWidget(self.txt_Entrada)
+        self.horizontalLayout_5.addWidget(self.txt_Entrada)
 
-        self.bt_Pesquisar_Entrada = QPushButton(self.frm_Codigo)
+        self.bt_Pesquisar_Entrada = QPushButton(self.frame_2)
         self.bt_Pesquisar_Entrada.setObjectName(u"bt_Pesquisar_Entrada")
         self.bt_Pesquisar_Entrada.setMinimumSize(QSize(40, 30))
         self.bt_Pesquisar_Entrada.setMaximumSize(QSize(40, 30))
 
-        self.horizontalLayout_2.addWidget(self.bt_Pesquisar_Entrada)
+        self.horizontalLayout_5.addWidget(self.bt_Pesquisar_Entrada)
+
+
+        self.verticalLayout_2.addWidget(self.frame_2)
+
+        self.frame = QFrame(self.frm_Codigo)
+        self.frame.setObjectName(u"frame")
+        self.frame.setFrameShape(QFrame.Shape.StyledPanel)
+        self.frame.setFrameShadow(QFrame.Shadow.Raised)
+        self.horizontalLayout_2 = QHBoxLayout(self.frame)
+        self.horizontalLayout_2.setSpacing(5)
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.horizontalLayout_2.setContentsMargins(5, 5, 5, 5)
+        self.lb_Produto = QLabel(self.frame)
+        self.lb_Produto.setObjectName(u"lb_Produto")
+        self.lb_Produto.setMinimumSize(QSize(0, 30))
+        self.lb_Produto.setMaximumSize(QSize(16777214, 30))
+
+        self.horizontalLayout_2.addWidget(self.lb_Produto)
+
+        self.txt_Produto = QLineEdit(self.frame)
+        self.txt_Produto.setObjectName(u"txt_Produto")
+        self.txt_Produto.setMinimumSize(QSize(0, 30))
+        self.txt_Produto.setMaximumSize(QSize(16777214, 30))
+
+        self.horizontalLayout_2.addWidget(self.txt_Produto)
+
+        self.bt_Pesquisar_Produto = QPushButton(self.frame)
+        self.bt_Pesquisar_Produto.setObjectName(u"bt_Pesquisar_Produto")
+        self.bt_Pesquisar_Produto.setMinimumSize(QSize(40, 30))
+        self.bt_Pesquisar_Produto.setMaximumSize(QSize(40, 30))
+
+        self.horizontalLayout_2.addWidget(self.bt_Pesquisar_Produto)
+
+        self.verticalLayout_3 = QVBoxLayout()
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.radioButton = QRadioButton(self.frame)
+        self.radioButton.setObjectName(u"radioButton")
+
+        self.verticalLayout_3.addWidget(self.radioButton)
+
+        self.radioButton_2 = QRadioButton(self.frame)
+        self.radioButton_2.setObjectName(u"radioButton_2")
+
+        self.verticalLayout_3.addWidget(self.radioButton_2)
+
+
+        self.horizontalLayout_2.addLayout(self.verticalLayout_3)
+
+
+        self.verticalLayout_2.addWidget(self.frame)
 
 
         self.verticalLayout.addWidget(self.frm_Codigo)
@@ -151,6 +207,10 @@ class Ui_Rel_Entrada(object):
         self.lb_Data_Final.setText(QCoreApplication.translate("Rel_Entrada", u"Data Final:", None))
         self.lb_Entrada.setText(QCoreApplication.translate("Rel_Entrada", u"Entrada", None))
         self.bt_Pesquisar_Entrada.setText(QCoreApplication.translate("Rel_Entrada", u"...", None))
+        self.lb_Produto.setText(QCoreApplication.translate("Rel_Entrada", u"Produto:", None))
+        self.bt_Pesquisar_Produto.setText(QCoreApplication.translate("Rel_Entrada", u"...", None))
+        self.radioButton.setText(QCoreApplication.translate("Rel_Entrada", u"Entrada Completa?", None))
+        self.radioButton_2.setText(QCoreApplication.translate("Rel_Entrada", u"S\u00f3 o Produto?", None))
         self.bt_Filtrar.setText(QCoreApplication.translate("Rel_Entrada", u"Filtrar", None))
     # retranslateUi
 

@@ -9,8 +9,12 @@ Regras de produção (baixa da ficha técnica) ficam em app.services.regras_prod
 Fluxo (espelhado na Ficha Técnica):
   Inicial -> Novo (cabeçalho) -> [bt_Abrir_Itens] -> Itens
           -> [bt_Sair_Itens] -> Finalizado -> Salvar
+
+Fluxo de campos (esquema em Z):
+  Data -> Motivo -> Abrir Itens (linha de cima)
+       -> Código -> Qtde -> Custo -> Salvar Itens (linha de baixo)
 """
-from PySide6.QtCore import QDate, Qt
+from PySide6.QtCore import QDate, QEvent, Qt
 from PySide6.QtGui import (QKeySequence, QShortcut, QStandardItem,
                            QStandardItemModel)
 from PySide6.QtWidgets import QMessageBox, QWidget
@@ -103,6 +107,7 @@ class EntradaController(QWidget):
         self._carregar_motivos()
         self._conectar_botoes()
         self._conectar_teclas()
+        self._definir_tab_order()
         self._limpar_campos()
 
     # ---------------- tabela ----------------
@@ -148,14 +153,57 @@ class EntradaController(QWidget):
 
     def _conectar_teclas(self):
         self.ui.txt_Sequencia.returnPressed.connect(self._ao_enter_sequencia)
+        # fluxo em Z no cabeçalho: Data -> Motivo -> Abrir Itens
+        self.ui.dt_Entrada.editingFinished.connect(
+            lambda: self.ui.cmb_Motivo.setFocus())
+        self.ui.cmb_Motivo.installEventFilter(self)
+        # fluxo em Z nos itens: Código -> Qtde -> Custo -> adicionar
         self.ui.txt_Cod_Prod.returnPressed.connect(self._buscar_insumo)
         self.ui.txt_Qtde.returnPressed.connect(
             lambda: self.ui.txt_Custo.setFocus())
         self.ui.txt_Custo.returnPressed.connect(self._adicionar_item)
+        # regra do milho: Enter no valor da sacaria segue para a quantidade
+        self.ui.txt_Milho.returnPressed.connect(
+            lambda: self.ui.txt_Qtde.setFocus())
         self.ui.txt_Milho.textChanged.connect(self._ao_digitar_milho)
         self.ui.cmb_Motivo.currentIndexChanged.connect(self._ao_mudar_motivo)
         self._at_f2 = QShortcut(QKeySequence(Qt.Key.Key_F2), self)
         self._at_f2.activated.connect(self._novo)
+
+    def eventFilter(self, observado, evento):
+        """Enter no combo de motivo abre os itens (fluxo em Z)."""
+        if (observado is self.ui.cmb_Motivo
+                and evento.type() == QEvent.Type.KeyPress
+                and evento.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter)):
+            self._abrir_itens()
+            return True
+        return super().eventFilter(observado, evento)
+
+    def _definir_tab_order(self):
+        """Ordem de Tab seguindo o esquema em Z."""
+        ordem = (
+            self.ui.txt_Sequencia,
+            self.ui.bt_Pesquisa_Entrada,
+            self.ui.bt_Novo,
+            self.ui.dt_Entrada,
+            self.ui.cmb_Motivo,
+            self.ui.bt_Abrir_Itens,
+            self.ui.txt_Cod_Prod,
+            self.ui.bt_Pesquisa_Itens,
+            self.ui.txt_Milho,  # oculto por padrão: pulado pelo Tab
+            self.ui.txt_Qtde,
+            self.ui.txt_Custo,
+            self.ui.bt_Salvar_Itens,
+            self.ui.bt_Limpar_Itens,
+            self.ui.bt_Excluir_Itens,
+            self.ui.bt_Sair_Itens,
+            self.ui.bt_Salvar,
+            self.ui.bt_Editar,
+            self.ui.bt_Limpar,
+            self.ui.bt_Excluir,
+        )
+        for anterior, proximo in zip(ordem, ordem[1:]):
+            QWidget.setTabOrder(anterior, proximo)
 
     # ---------------- estados da tela ----------------
 
@@ -250,7 +298,7 @@ class EntradaController(QWidget):
         self._modo = MODO_NOVO
         self._fase = FASE_CABECALHO
         self._aplicar_estado()
-        self.ui.cmb_Motivo.setFocus()
+        self.ui.dt_Entrada.setFocus()
 
     def _liberar_edicao(self):
         if self._modo != MODO_VISUALIZACAO:
@@ -258,7 +306,7 @@ class EntradaController(QWidget):
         self._modo = MODO_EDICAO
         self._fase = FASE_CABECALHO
         self._aplicar_estado()
-        self.ui.cmb_Motivo.setFocus()
+        self.ui.dt_Entrada.setFocus()
 
     def _abrir_itens(self):
         """bt_Abrir_Itens: valida o cabeçalho e libera a inclusão de itens."""
