@@ -217,6 +217,98 @@ class SaidaRepository:
                 linha = cur.fetchone()
         return float(linha[0]) if linha and linha[0] is not None else 0.0
 
+    # ---------------- correção de lançamentos (ficha técnica) ----------------
+
+    def saidas_com_produto(self, produto_id: int | None) -> list[int]:
+        """Saídas que contêm o produto acabado.
+
+        Usado ao alterar uma ficha técnica: nelas a mão de obra foi
+        calculada com a ficha no momento da venda.
+        """
+        if produto_id is None:
+            return []
+        with self._conn:
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT DISTINCT s.id, s.sequencia
+                      FROM saidas s
+                      JOIN itens_saida is_ ON is_.saida_id = s.id
+                     WHERE is_.produto_id = %s
+                     ORDER BY s.sequencia
+                    """,
+                    (produto_id,),
+                )
+                return [l[0] for l in cur.fetchall()]
+
+    def recalcular_mao_obra(self, saida_id: int) -> bool:
+        """Regrava a mão de obra da saída com as fichas atuais.
+
+        Recalcula a partir dos itens acabados da saída: cada item da
+        ficha com mao_obra=true gera qtd = quantidade_kg *
+        (vendida / sacos_batida), agregado por insumo; custo = custo
+        cadastrado do insumo. Devolve False quando a saída não tem
+        acabado com ficha válida (nada a recalcular).
+        """
+        from app.repositories.ficha_tecnica_repository import (
+            FichaTecnicaRepository,
+        )
+
+        # ---- 1) leitura: itens da saída ----
+        with self._conn:
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    "SELECT is_.id, is_.produto_id, is_.quantidade "
+                    "FROM itens_saida is_ "
+                    "WHERE is_.saida_id = %s ORDER BY is_.id",
+                    (saida_id,),
+                )
+                itens = cur.fetchall()
+
+        # ---- 2) fichas atuais de cada acabado (fora da transação) ----
+        ficha_repo = FichaTecnicaRepository(conn=self._conn)
+        ficha_valida = False
+        agregado: dict[int, tuple[str, float, float]] = {}
+        for _, produto_id, quantidade in itens:
+            if produto_id is None:
+                continue
+            ficha = ficha_repo.buscar_por_produto(produto_id)
+            if ficha is None or ficha.sacos_batida <= 0:
+                continue
+            ficha_valida = True
+            proporcao = float(quantidade) / ficha.sacos_batida
+            for fi in ficha.itens:
+                if not fi.mao_obra or fi.produto_id is None:
+                    continue
+                qtd = round(fi.quantidade_kg * proporcao, 4)
+                if fi.produto_id in agregado:
+                    codigo, qtd_ant, _ = agregado[fi.produto_id]
+                    agregado[fi.produto_id] = (codigo, qtd_ant + qtd,
+                                               fi.custo)
+                else:
+                    agregado[fi.produto_id] = (fi.codigo_produto, qtd,
+                                               fi.custo)
+        if not ficha_valida:
+            return False
+
+        # ---- 3) escrita: regrava itens_saida_mao_obra ----
+        # (pode ficar vazia se a ficha nova não tem mais mão de obra)
+        with self._conn:
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM itens_saida_mao_obra WHERE saida_id = %s",
+                    (saida_id,),
+                )
+                for produto_id, (codigo, qtd, custo) in agregado.items():
+                    cur.execute(
+                        f"INSERT INTO itens_saida_mao_obra "
+                        f"({_COLUNAS_MAO_OBRA}) VALUES (%s, %s, %s, %s)",
+                        (saida_id, produto_id, qtd, custo),
+                    )
+        logger.info("Mão de obra recalculada na saída id=%s (%s insumos)",
+                    saida_id, len(agregado))
+        return True
+
     # ---------------- auxiliares de leitura ----------------
 
     @staticmethod

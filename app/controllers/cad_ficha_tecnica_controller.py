@@ -525,9 +525,16 @@ class CadFichaTecnicaController(QWidget):
         return True
 
     def _montar_ficha(self) -> FichaTecnica:
+        produto_id = (self._produto_acabado.id
+                      if self._produto_acabado else None)
+        if produto_id is None and self._ficha_id and self._service:
+            # edição sem recarregar o objeto: busca pelo código na tela
+            ficha_salva = self._service.buscar_por_id(self._ficha_id)
+            if ficha_salva:
+                produto_id = ficha_salva.produto_id
         return FichaTecnica(
             id=self._ficha_id,
-            produto_id=self._produto_acabado.id if self._produto_acabado else None,
+            produto_id=produto_id,
             codigo_produto=self.ui.txt_Prod_Acabado.text().strip(),
             sacos_batida=float(
                 self.ui.txt_Sacos_Batida.text().strip().replace(",", ".")),
@@ -551,11 +558,41 @@ class CadFichaTecnicaController(QWidget):
             return
 
         ficha = self._montar_ficha()
+        mensagem = ""
         try:
             if self._modo == MODO_NOVO:
                 ficha = self._service.salvar(ficha)
-            else:
+                mensagem = f"Ficha salva com sucesso. Código: {ficha.id}"
+            elif not self._service.tem_movimentacao(ficha.id):
+                # sem movimentação: alteração livre, sem pergunta
                 self._service.atualizar(ficha)
+                mensagem = f"Ficha salva com sucesso. Código: {ficha.id}"
+            else:
+                resposta = QMessageBox.question(
+                    self, "Ficha com movimentação",
+                    "Esta ficha já possui lançamentos de produção "
+                    "e/ou venda.\n\n"
+                    "Corrigir lançamentos efetuados?\n\n"
+                    "Sim: refaz as baixas e os custos das entradas já "
+                    "lançadas e a mão de obra das saídas já efetuadas "
+                    "com esta ficha.\n"
+                    "Não: mantém os lançamentos; os próximos usarão a "
+                    "ficha alterada.",
+                    QMessageBox.StandardButton.Yes
+                    | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
+                if resposta == QMessageBox.StandardButton.Yes:
+                    corrigidas, saidas = self._service.corrigir_lancamentos(
+                        ficha)
+                    mensagem = (
+                        f"Ficha salva. {corrigidas} entrada(s) e "
+                        f"{saidas} saída(s) corrigida(s).")
+                else:
+                    self._service.atualizar(ficha)
+                    mensagem = (
+                        "Ficha salva. Os próximos lançamentos usarão "
+                        "a ficha alterada.")
         except Exception as exc:
             logger.exception("Falha ao salvar ficha")
             QMessageBox.critical(
@@ -564,9 +601,7 @@ class CadFichaTecnicaController(QWidget):
             return
 
         logger.info("Ficha salva: id=%s", ficha.id)
-        QMessageBox.information(
-            self, "Sucesso",
-            f"Ficha salva com sucesso. Código: {ficha.id}")
+        QMessageBox.information(self, "Sucesso", mensagem)
         self._limpar_campos()
         self.ui.txt_Ficha.setFocus()
 
@@ -627,6 +662,9 @@ class CadFichaTecnicaController(QWidget):
         self.ui.txt_Prod_Acabado.setText(ficha.codigo_produto)
         self.ui.txt_Descricao_Prod_Acabado.setText(
             self._descricao_de(ficha.codigo_produto))
+        # recarrega o objeto do produto acabado: sem ele o salvar
+        # montaria a ficha com produto_id=None (NotNullViolation)
+        self._produto_acabado = self._produto_de(ficha.codigo_produto)
         self._itens = list(ficha.itens)
         self._atualizar_tabelas()
         self._modo = MODO_VISUALIZACAO

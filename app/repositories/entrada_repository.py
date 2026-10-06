@@ -116,6 +116,157 @@ class EntradaRepository:
         logger.info("Entrada excluída: id=%s", entrada_id)
         return True
 
+    # ---------------- correção de lançamentos (ficha técnica) ----------------
+
+    def entradas_de_producao(self, produto_id: int | None) -> list[int]:
+        """Entradas de produção (motivo baixa_producao) com o produto acabado.
+
+        Usado ao alterar uma ficha técnica: são as entradas cujas baixas
+        foram calculadas com a ficha.
+        """
+        if produto_id is None:
+            return []
+        with self._conn:
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT DISTINCT e.id, e.sequencia
+                      FROM entradas e
+                      JOIN motivos_entrada m ON m.id = e.motivo_entrada_id
+                      JOIN itens_entrada ie ON ie.entrada_id = e.id
+                     WHERE m.baixa_producao = TRUE
+                       AND ie.produto_id = %s
+                     ORDER BY e.sequencia
+                    """,
+                    (produto_id,),
+                )
+                return [l[0] for l in cur.fetchall()]
+
+    def recalcular_baixas(self, entrada_id: int) -> bool:
+        """Regrava as baixas de produção da entrada com as fichas atuais.
+
+        Para cada acabado da entrada com ficha técnica válida:
+          - recalcula as baixas (proporção sacos_batida) com a ficha vigente
+          - atualiza o custo do acabado nos lançamentos
+            (itens_entrada + kardex 'E')
+          - regrava os movimentos 'S' (baixas) da entrada no kardex
+        Entradas sem motivo de produção ou sem acabado com ficha ficam
+        intactas (devolve False).
+        """
+        from app.repositories.ficha_tecnica_repository import (
+            FichaTecnicaRepository,
+        )
+        from app.services import regras_producao
+
+        # ---- 1) leitura: entrada é de produção? quais os itens? ----
+        with self._conn:
+            with self._conn.cursor() as cur:
+                cur.execute(
+                    "SELECT e.data_entrada, e.sequencia, "
+                    "COALESCE(m.baixa_producao, FALSE), "
+                    "COALESCE(m.descricao, '') "
+                    "FROM entradas e "
+                    "LEFT JOIN motivos_entrada m "
+                    "  ON m.id = e.motivo_entrada_id "
+                    "WHERE e.id = %s",
+                    (entrada_id,),
+                )
+                linha = cur.fetchone()
+                if not linha:
+                    return False
+                data_entrada, sequencia, baixa_producao, historico = linha
+                if not baixa_producao:
+                    return False
+                cur.execute(
+                    "SELECT ie.id, ie.produto_id, ie.quantidade "
+                    "FROM itens_entrada ie "
+                    "WHERE ie.entrada_id = %s ORDER BY ie.id",
+                    (entrada_id,),
+                )
+                itens = cur.fetchall()
+
+        # ---- 2) fichas atuais de cada acabado (fora da transação) ----
+        ficha_repo = FichaTecnicaRepository(conn=self._conn)
+        acabados = []  # (item_id, produto_id, baixas)
+        for item_id, produto_id, quantidade in itens:
+            if produto_id is None:
+                continue
+            ficha = ficha_repo.buscar_por_produto(produto_id)
+            if not regras_producao.ficha_valida(ficha):
+                continue
+            acabados.append((item_id, produto_id,
+                             regras_producao.calcular_baixa(
+                                 ficha, float(quantidade))))
+        if not acabados:
+            return False
+
+        # ---- 3) escrita: custos + regravação das baixas ----
+        with self._conn:
+            with self._conn.cursor() as cur:
+                for item_id, produto_id, baixas in acabados:
+                    custo_novo = regras_producao.custo_producao(
+                        baixas, self._custos_insumos(cur, baixas))
+                    cur.execute(
+                        "UPDATE itens_entrada SET custo = %s WHERE id = %s",
+                        (custo_novo, item_id),
+                    )
+                    cur.execute(
+                        "UPDATE movimentos_kardex SET custo_unitario = %s "
+                        "WHERE entrada_id = %s AND tipo = 'E' "
+                        "AND produto_id = %s",
+                        (custo_novo, entrada_id, produto_id),
+                    )
+                cur.execute(
+                    "DELETE FROM movimentos_kardex "
+                    "WHERE entrada_id = %s AND tipo = 'S'",
+                    (entrada_id,),
+                )
+                for _, _, baixas in acabados:
+                    for baixa in baixas:
+                        cur.execute(
+                            "SELECT custo FROM produtos WHERE id = %s",
+                            (baixa.produto_id,),
+                        )
+                        linha_custo = cur.fetchone()
+                        custo_insumo = (
+                            float(linha_custo[0])
+                            if linha_custo and linha_custo[0] is not None
+                            else 0.0)
+                        cur.execute(
+                            "INSERT INTO movimentos_kardex "
+                            "(produto_id, data_movimento, tipo, documento, "
+                            "historico, quantidade, custo_unitario, "
+                            "entrada_id) VALUES (%s, %s, 'S', %s, %s, "
+                            "%s, %s, %s)",
+                            (baixa.produto_id, data_entrada, str(sequencia),
+                             f"Baixa produção - {historico}",
+                             # quantidade convertida para sacos
+                             baixa.quantidade_sacos
+                             if baixa.quantidade_sacos
+                             else baixa.quantidade_kg,
+                             custo_insumo, entrada_id),
+                        )
+        logger.info("Baixas recalculadas na entrada id=%s (%s acabados)",
+                    entrada_id, len(acabados))
+        return True
+
+    @staticmethod
+    def _custos_insumos(cur, baixas) -> dict[str, float]:
+        """Custo cadastrado atual de cada insumo (por código)."""
+        custos: dict[str, float] = {}
+        for baixa in baixas:
+            if baixa.produto_id is None or baixa.codigo_produto in custos:
+                continue
+            cur.execute(
+                "SELECT custo FROM produtos WHERE id = %s",
+                (baixa.produto_id,),
+            )
+            linha = cur.fetchone()
+            custos[baixa.codigo_produto] = (
+                float(linha[0])
+                if linha and linha[0] is not None else 0.0)
+        return custos
+
     # ---------------- auxiliares de escrita ----------------
 
     def _inserir_itens(self, cur, entrada: Entrada):
