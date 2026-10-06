@@ -2,6 +2,7 @@
 """Pré-visualização do relatório de entradas.
 
 Mostra os dados no mesmo layout do PDF e permite gerar PDF, XLSX ou CSV.
+No modo só o produto, o total por entrada vira "Total do Produto".
 """
 from datetime import datetime
 
@@ -63,16 +64,19 @@ class RelEntradaPreviewController(QDialog):
             partes.append("<p>Nenhuma entrada no período.</p>")
 
         for linha in self._relatorio.linhas:
-            partes.append(self._html_entrada(linha))
+            partes.append(self._html_entrada(
+                linha, self._relatorio.so_produto))
         partes.append(self._html_total_geral())
         self.ui.txt_Visualizacao.setHtml("".join(partes))
 
     @staticmethod
-    def _html_entrada(entrada) -> str:
+    def _html_entrada(entrada, so_produto: bool = False) -> str:
         titulo = (f"<b>ENTRADA Nº {entrada.sequencia}</b> · "
                   f"{_data_br(entrada.data_entrada)}")
         if entrada.motivo_descricao:
             titulo += f" · {entrada.motivo_descricao}"
+        total_rotulo = ("Total do Produto na Entrada"
+                        if so_produto else "Total da Entrada")
         html = [
             "<table width='100%' cellspacing='0' cellpadding='0'>"
             f"<tr><td style='background-color:{AZUL};color:#FFFFFF;"
@@ -103,7 +107,7 @@ class RelEntradaPreviewController(QDialog):
         html.append(
             "<tr style='background-color:#E8EDF2;font-weight:bold;"
             f"color:{TEXTO};'>"
-            "<td colspan='4'>Total da Entrada</td>"
+            "<td colspan='4'>" + total_rotulo + "</td>"
             f"<td align='right'>{_moeda(entrada.total)}</td></tr>"
             "</table><br>"
         )

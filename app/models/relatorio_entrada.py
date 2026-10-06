@@ -33,10 +33,15 @@ class LinhaEntrada:
 
 @dataclass
 class RelatorioEntrada:
-    """Relatório de entradas do período (filtro opcional por entrada)."""
+    """Relatório de entradas do período.
+
+    Filtros: entrada específica e/ou produto (com modo só_produto).
+    """
     data_inicial: str = ""
     data_final: str = ""
     entrada_id: int | None = None
+    produto_id: int | None = None
+    so_produto: bool = False
     linhas: list[LinhaEntrada] = field(default_factory=list)
 
     @property

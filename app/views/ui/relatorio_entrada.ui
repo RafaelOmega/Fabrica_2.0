@@ -347,14 +347,14 @@
             <item>
              <layout class="QVBoxLayout" name="verticalLayout_3">
               <item>
-               <widget class="QRadioButton" name="radioButton">
+               <widget class="QRadioButton" name="rb_Entrada_Completa">
                 <property name="text">
                  <string>Entrada Completa?</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QRadioButton" name="radioButton_2">
+               <widget class="QRadioButton" name="rb_So_Produto">
                 <property name="text">
                  <string>Só o Produto?</string>
                 </property>

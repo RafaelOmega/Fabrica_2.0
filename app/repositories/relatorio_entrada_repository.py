@@ -2,7 +2,11 @@
 """Repositório do relatório de entradas (PostgreSQL).
 
 Fonte: entradas + itens_entrada (descrição via JOIN com produtos).
-Filtro opcional por entrada específica (id vindo da pesquisa).
+Filtros:
+  - entrada específica (id vindo da pesquisa)
+  - produto (id vindo da pesquisa) com dois modos:
+      * entrada completa: entradas que contêm o produto, com TODOS os itens
+      * só o produto: mesmas entradas, apenas os itens do produto
 """
 from datetime import date
 
@@ -21,59 +25,76 @@ class RelatorioEntradaRepository:
         self._conn = conn or get_connection()
 
     def relatorio(self, data_inicial: date, data_final: date,
-                  entrada_id: int | None = None) -> RelatorioEntrada:
-        """Entradas do período (ou uma específica), com seus itens."""
+                  entrada_id: int | None = None,
+                  produto_id: int | None = None,
+                  so_produto: bool = False) -> RelatorioEntrada:
+        """Entradas do período (ou específica), com seus itens.
+
+        Com produto_id: só entradas que contêm o produto; em
+        so_produto=True os itens ficam restritos ao produto.
+        """
         relatorio = RelatorioEntrada(
             data_inicial=data_inicial.isoformat(),
             data_final=data_final.isoformat(),
             entrada_id=entrada_id,
+            produto_id=produto_id,
+            so_produto=so_produto,
         )
         with self._conn:
             with self._conn.cursor() as cur:
-                # 1) entradas do período (ou a selecionada)
+                # 1) entradas (período ou específica) + filtro de produto
+                sql = (
+                    "SELECT e.id, e.sequencia, e.data_entrada, "
+                    "COALESCE(m.descricao, '') "
+                    "FROM entradas e "
+                    "LEFT JOIN motivos_entrada m "
+                    "ON m.id = e.motivo_entrada_id WHERE "
+                )
+                params: list = []
                 if entrada_id:
-                    cur.execute(
-                        """
-                        SELECT e.id, e.sequencia, e.data_entrada,
-                               COALESCE(m.descricao, '')
-                          FROM entradas e
-                          LEFT JOIN motivos_entrada m
-                                 ON m.id = e.motivo_entrada_id
-                         WHERE e.id = %s
-                         ORDER BY e.sequencia
-                        """,
-                        (entrada_id,),
-                    )
+                    sql += "e.id = %s"
+                    params.append(entrada_id)
                 else:
-                    cur.execute(
-                        """
-                        SELECT e.id, e.sequencia, e.data_entrada,
-                               COALESCE(m.descricao, '')
-                          FROM entradas e
-                          LEFT JOIN motivos_entrada m
-                                 ON m.id = e.motivo_entrada_id
-                         WHERE e.data_entrada BETWEEN %s AND %s
-                         ORDER BY e.sequencia
-                        """,
-                        (data_inicial, data_final),
-                    )
+                    sql += "e.data_entrada BETWEEN %s AND %s"
+                    params += [data_inicial, data_final]
+                if produto_id:
+                    sql += (" AND EXISTS (SELECT 1 FROM itens_entrada ie "
+                            "WHERE ie.entrada_id = e.id "
+                            "AND ie.produto_id = %s)")
+                    params.append(produto_id)
+                sql += " ORDER BY e.sequencia"
+                cur.execute(sql, params)
                 entradas = cur.fetchall()
                 if not entradas:
                     return relatorio
                 ids = [l[0] for l in entradas]
 
-                # 2) itens das entradas (descrição pronta do JOIN)
-                cur.execute(
-                    """
-                    SELECT ie.entrada_id, ie.produto_id, p.codigo,
-                           p.descricao, ie.quantidade, ie.custo
-                      FROM itens_entrada ie
-                      LEFT JOIN produtos p ON p.id = ie.produto_id
-                     WHERE ie.entrada_id = ANY(%s)
-                     ORDER BY ie.entrada_id, ie.id
-                    """,
-                    (ids,),
-                )
+                # 2) itens (restritos ao produto no modo só o produto)
+                if produto_id and so_produto:
+                    cur.execute(
+                        """
+                        SELECT ie.entrada_id, ie.produto_id, p.codigo,
+                               p.descricao, ie.quantidade, ie.custo
+                          FROM itens_entrada ie
+                          LEFT JOIN produtos p ON p.id = ie.produto_id
+                         WHERE ie.entrada_id = ANY(%s)
+                           AND ie.produto_id = %s
+                         ORDER BY ie.entrada_id, ie.id
+                        """,
+                        (ids, produto_id),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        SELECT ie.entrada_id, ie.produto_id, p.codigo,
+                               p.descricao, ie.quantidade, ie.custo
+                          FROM itens_entrada ie
+                          LEFT JOIN produtos p ON p.id = ie.produto_id
+                         WHERE ie.entrada_id = ANY(%s)
+                         ORDER BY ie.entrada_id, ie.id
+                        """,
+                        (ids,),
+                    )
                 itens_por_entrada: dict[int, list[ItemRelatorioEntrada]] = {}
                 for l in cur.fetchall():
                     itens_por_entrada.setdefault(l[0], []).append(
@@ -95,6 +116,7 @@ class RelatorioEntradaRepository:
                 motivo_descricao=motivo or "",
                 itens=itens_por_entrada.get(entrada_id_, []),
             ))
-        logger.info("Relatório de entradas gerado: %s entradas",
-                    len(relatorio.linhas))
+        logger.info("Relatório de entradas gerado: %s entradas "
+                    "(produto=%s, só produto=%s)",
+                    len(relatorio.linhas), produto_id, so_produto)
         return relatorio

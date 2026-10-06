@@ -4,6 +4,7 @@
 Layout seguindo o padrão dos demais relatórios:
   - Cabeçalho fixo: título, período e emissão
   - Uma seção por entrada: itens lançados + total da entrada
+  - No modo só o produto, o total por entrada vira "Total do Produto"
   - Rodapé fixo: sistema à esquerda, "Página X de Y" à direita
 """
 from datetime import datetime
@@ -146,11 +147,13 @@ def _tabela_itens(linhas: list[list], total_texto: str,
     return tabela
 
 
-def _secao_entrada(entrada) -> list:
+def _secao_entrada(entrada, so_produto: bool = False) -> list:
     titulo = (f"<b>ENTRADA Nº {entrada.sequencia}</b> · "
               f"{_data_br(entrada.data_entrada)}")
     if entrada.motivo_descricao:
         titulo += f" · {entrada.motivo_descricao}"
+    total_rotulo = ("Total do Produto na Entrada"
+                    if so_produto else "Total da Entrada")
     story = [_barra_azul(titulo), Spacer(1, 0.15 * cm)]
 
     linhas = []
@@ -165,7 +168,7 @@ def _secao_entrada(entrada) -> list:
     if not linhas:
         linhas.append(["", Paragraph("sem itens lançados", _ESTILO_CELULA),
                        "", "", ""])
-    story.append(_tabela_itens(linhas, "Total da Entrada", entrada.total))
+    story.append(_tabela_itens(linhas, total_rotulo, entrada.total))
     return story
 
 
@@ -192,7 +195,8 @@ def gerar_pdf_entradas(relatorio, caminho: str, periodo: str = "") -> str:
         story.append(Paragraph("Nenhuma entrada no período.",
                                _ESTILO_CELULA))
     for entrada in relatorio.linhas:
-        story.append(KeepTogether(_secao_entrada(entrada)))
+        story.append(KeepTogether(
+            _secao_entrada(entrada, relatorio.so_produto)))
         story.append(Spacer(1, 0.5 * cm))
 
     story.append(Paragraph(

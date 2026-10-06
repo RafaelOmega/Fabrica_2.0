@@ -11,6 +11,13 @@ def _data_br(data_iso: str) -> str:
         return data_iso
 
 
+def _total_rotulo(relatorio, sequencia) -> str:
+    """Rótulo da linha de total por entrada, conforme o modo."""
+    if relatorio.so_produto:
+        return f"Total do Produto na Entrada Nº {sequencia}"
+    return f"Total da Entrada Nº {sequencia}"
+
+
 def gerar_xlsx_entradas(relatorio, caminho: str, periodo: str = "") -> None:
     """Gera o XLSX (uma linha por item lançado)."""
     from openpyxl import Workbook
@@ -39,7 +46,7 @@ def gerar_xlsx_entradas(relatorio, caminho: str, periodo: str = "") -> None:
                 entrada.motivo_descricao,
                 "", "sem itens lançados", "", "", entrada.total,
             ])
-        ws.append(["", "", f"Total da Entrada Nº {entrada.sequencia}",
+        ws.append(["", "", _total_rotulo(relatorio, entrada.sequencia),
                    "", "", "", "", round(entrada.total, 2)])
     ws.append(["", "", "TOTAL GERAL", "", "", "", "",
                round(relatorio.total_geral, 2)])
@@ -70,7 +77,8 @@ def gerar_csv_entradas(relatorio, caminho: str, periodo: str = "") -> None:
                     entrada.motivo_descricao,
                     "", "sem itens lançados", "", "", entrada.total,
                 ])
-            writer.writerow(["", "", f"Total da Entrada Nº {entrada.sequencia}",
+            writer.writerow(["", "",
+                             _total_rotulo(relatorio, entrada.sequencia),
                              "", "", "", "", round(entrada.total, 2)])
         writer.writerow(["", "", "TOTAL GERAL", "", "", "", "",
                          round(relatorio.total_geral, 2)])

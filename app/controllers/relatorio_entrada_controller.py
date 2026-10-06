@@ -4,6 +4,12 @@
 Responsabilidade: APENAS controle de tela (filtros, botões).
 Ao filtrar, abre a pré-visualização (mesmo layout do PDF), de onde
 o usuário gera PDF, XLSX ou CSV. Dados via service.
+
+Filtros:
+  - Entrada e Produto vazios: relatório completo do período
+  - Entrada filtrada: apenas a entrada selecionada
+  - Produto filtrado: Entrada Completa (entradas inteiras que o
+    contêm) ou Só o Produto (apenas as linhas do produto)
 """
 from datetime import date
 
@@ -27,15 +33,21 @@ class RelEntradaController(QWidget):
 
         self._service = RelatorioEntradaService()
         self._entrada_id = None
+        self._produto_id = None
 
         # padrão: mês corrente
         hoje = QDate.currentDate()
         self.ui.dt_Data_Inicial.setDate(QDate(hoje.year(), hoje.month(), 1))
         self.ui.dt_Data_Final.setDate(hoje)
 
+        # padrão do modo de produto: entrada completa
+        self.ui.rb_Entrada_Completa.setChecked(True)
+
         self.ui.bt_Pesquisar_Entrada.clicked.connect(self._pesquisar_entrada)
+        self.ui.bt_Pesquisar_Produto.clicked.connect(self._pesquisar_produto)
         self.ui.bt_Filtrar.clicked.connect(self._filtrar)
         self.ui.txt_Entrada.textChanged.connect(self._ao_mudar_entrada)
+        self.ui.txt_Produto.textChanged.connect(self._ao_mudar_produto)
 
     # ---------------- entrada ----------------
 
@@ -57,6 +69,26 @@ class RelEntradaController(QWidget):
                 self.ui.txt_Entrada.setText(
                     f"{entrada.sequencia} - {entrada.motivo_descricao}")
 
+    # ---------------- produto ----------------
+
+    def _ao_mudar_produto(self):
+        """Limpar o campo manualmente cancela o filtro de produto."""
+        if not self.ui.txt_Produto.text().strip():
+            self._produto_id = None
+
+    def _pesquisar_produto(self):
+        from app.controllers.pesquisa_produto_controller import (
+            PesquisaProdutoController,
+        )
+        dialogo = PesquisaProdutoController(self)
+        if dialogo.exec() == dialogo.DialogCode.Accepted:
+            produto = dialogo.produto_selecionado()
+            if produto:
+                self._produto_id = produto.id
+                # padrão dos outros relatórios: código - descrição
+                self.ui.txt_Produto.setText(
+                    f"{produto.codigo} - {produto.descricao}")
+
     # ---------------- filtro ----------------
 
     def _filtrar(self):
@@ -68,11 +100,16 @@ class RelEntradaController(QWidget):
                 "A data final deve ser maior ou igual à data inicial.")
             self.ui.dt_Data_Final.setFocus()
             return
+
+        so_produto = bool(
+            self._produto_id and self.ui.rb_So_Produto.isChecked())
         try:
             relatorio = self._service.relatorio(
                 date.fromisoformat(data_inicial),
                 date.fromisoformat(data_final),
                 self._entrada_id,
+                self._produto_id,
+                so_produto,
             )
         except Exception as exc:
             logger.exception("Falha ao gerar o relatório de entradas")
@@ -82,8 +119,11 @@ class RelEntradaController(QWidget):
             return
 
         if not relatorio.tem_dados:
-            QMessageBox.information(
-                self, "Relatório", "Nenhuma entrada no período.")
+            mensagem = ("Nenhuma entrada com o produto selecionado "
+                        "no período."
+                        if self._produto_id
+                        else "Nenhuma entrada no período.")
+            QMessageBox.information(self, "Relatório", mensagem)
             return
 
         if self._entrada_id:
@@ -94,6 +134,10 @@ class RelEntradaController(QWidget):
                 f"Período: {self.ui.dt_Data_Inicial.date().toString('dd/MM/yyyy')}"
                 f" a {self.ui.dt_Data_Final.date().toString('dd/MM/yyyy')}"
             )
+        if self._produto_id:
+            periodo += f" · Produto: {self.ui.txt_Produto.text().strip()}"
+            if so_produto:
+                periodo += " (só o produto)"
 
         from app.controllers.relatorio_entrada_preview_controller import (
             RelEntradaPreviewController,

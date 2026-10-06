@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'relatorio_entradaOCMfnF.ui'
+## Form generated from reading UI file 'relatorio_entradaoDCggz.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -155,15 +155,15 @@ class Ui_Rel_Entrada(object):
 
         self.verticalLayout_3 = QVBoxLayout()
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.radioButton = QRadioButton(self.frame)
-        self.radioButton.setObjectName(u"radioButton")
+        self.rb_Entrada_Completa = QRadioButton(self.frame)
+        self.rb_Entrada_Completa.setObjectName(u"rb_Entrada_Completa")
 
-        self.verticalLayout_3.addWidget(self.radioButton)
+        self.verticalLayout_3.addWidget(self.rb_Entrada_Completa)
 
-        self.radioButton_2 = QRadioButton(self.frame)
-        self.radioButton_2.setObjectName(u"radioButton_2")
+        self.rb_So_Produto = QRadioButton(self.frame)
+        self.rb_So_Produto.setObjectName(u"rb_So_Produto")
 
-        self.verticalLayout_3.addWidget(self.radioButton_2)
+        self.verticalLayout_3.addWidget(self.rb_So_Produto)
 
 
         self.horizontalLayout_2.addLayout(self.verticalLayout_3)
@@ -209,8 +209,8 @@ class Ui_Rel_Entrada(object):
         self.bt_Pesquisar_Entrada.setText(QCoreApplication.translate("Rel_Entrada", u"...", None))
         self.lb_Produto.setText(QCoreApplication.translate("Rel_Entrada", u"Produto:", None))
         self.bt_Pesquisar_Produto.setText(QCoreApplication.translate("Rel_Entrada", u"...", None))
-        self.radioButton.setText(QCoreApplication.translate("Rel_Entrada", u"Entrada Completa?", None))
-        self.radioButton_2.setText(QCoreApplication.translate("Rel_Entrada", u"S\u00f3 o Produto?", None))
+        self.rb_Entrada_Completa.setText(QCoreApplication.translate("Rel_Entrada", u"Entrada Completa?", None))
+        self.rb_So_Produto.setText(QCoreApplication.translate("Rel_Entrada", u"S\u00f3 o Produto?", None))
         self.bt_Filtrar.setText(QCoreApplication.translate("Rel_Entrada", u"Filtrar", None))
     # retranslateUi
 

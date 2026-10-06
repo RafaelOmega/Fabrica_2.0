@@ -14,5 +14,8 @@ class RelatorioEntradaService:
         self._repo = RelatorioEntradaRepository()
 
     def relatorio(self, data_inicial: date, data_final: date,
-                  entrada_id: int | None = None) -> RelatorioEntrada:
-        return self._repo.relatorio(data_inicial, data_final, entrada_id)
+                  entrada_id: int | None = None,
+                  produto_id: int | None = None,
+                  so_produto: bool = False) -> RelatorioEntrada:
+        return self._repo.relatorio(
+            data_inicial, data_final, entrada_id, produto_id, so_produto)
