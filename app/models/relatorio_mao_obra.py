@@ -38,12 +38,23 @@ class ResumoMaoObra:
 
 @dataclass
 class RelatorioMaoObra:
-    """Relatório de mão de obra: detalhe saída a saída + resumo."""
+    """Relatório de mão de obra: detalhe saída a saída + resumo.
+
+    Com somente_resumo=True, o detalhe não é gerado (linhas vazia)
+    e o relatório mostra apenas o resumo agregado.
+    """
     data_inicial: str = ""
     data_final: str = ""
+    somente_resumo: bool = False
     linhas: list[LinhaMaoObraSaida] = field(default_factory=list)
     resumo: list[ResumoMaoObra] = field(default_factory=list)
 
     @property
+    def tem_dados(self) -> bool:
+        return bool(self.linhas or self.resumo)
+
+    @property
     def total_geral(self) -> float:
-        return sum(l.total for l in self.linhas)
+        if self.linhas:
+            return sum(l.total for l in self.linhas)
+        return sum(r.total for r in self.resumo)

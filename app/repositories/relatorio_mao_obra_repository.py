@@ -4,6 +4,8 @@
 Fonte: tabela itens_saida_mao_obra (mão de obra das saídas),
 vinculada às saídas pelo saida_id. A mão de obra não controla estoque,
 por isso não vem do kardex.
+
+Modo somente_resumo: gera apenas o resumo agregado (detalhe pulado).
 """
 from datetime import date
 
@@ -22,66 +24,69 @@ class RelatorioMaoObraRepository:
         self._conn = conn or get_connection()
 
     def relatorio(self, data_inicial: date, data_final: date,
-                  produto_id: int | None = None) -> RelatorioMaoObra:
+                  produto_id: int | None = None,
+                  somente_resumo: bool = False) -> RelatorioMaoObra:
         """Mão de obra das saídas no período.
 
-        Retorna o detalhe saída a saída (sequência, data, destino,
-        retirada) e o resumo agregado por mão de obra. Se produto_id
+        Padrão: detalhe saída a saída + resumo agregado por mão de obra.
+        Com somente_resumo=True, gera apenas o resumo. Se produto_id
         informado, filtra só a mão de obra daquele produto.
         """
         relatorio = RelatorioMaoObra(
             data_inicial=data_inicial.isoformat(),
             data_final=data_final.isoformat(),
+            somente_resumo=somente_resumo,
         )
         with self._conn:
             with self._conn.cursor() as cur:
-                # detalhe: saída a saída
-                if produto_id:
-                    cur.execute(
-                        """
-                        SELECT m.saida_id, s.sequencia, s.data_saida,
-                               s.destino, s.retirada,
-                               m.produto_id, p.codigo, p.descricao,
-                               m.quantidade, m.custo
-                          FROM itens_saida_mao_obra m
-                          JOIN saidas s ON s.id = m.saida_id
-                          LEFT JOIN produtos p ON p.id = m.produto_id
-                         WHERE s.data_saida BETWEEN %s AND %s
-                           AND m.produto_id = %s
-                         ORDER BY s.sequencia, m.id
-                        """,
-                        (data_inicial, data_final, produto_id),
-                    )
-                else:
-                    cur.execute(
-                        """
-                        SELECT m.saida_id, s.sequencia, s.data_saida,
-                               s.destino, s.retirada,
-                               m.produto_id, p.codigo, p.descricao,
-                               m.quantidade, m.custo
-                          FROM itens_saida_mao_obra m
-                          JOIN saidas s ON s.id = m.saida_id
-                          LEFT JOIN produtos p ON p.id = m.produto_id
-                         WHERE s.data_saida BETWEEN %s AND %s
-                         ORDER BY s.sequencia, m.id
-                        """,
-                        (data_inicial, data_final),
-                    )
-                for l in cur.fetchall():
-                    relatorio.linhas.append(LinhaMaoObraSaida(
-                        saida_id=l[0],
-                        sequencia=l[1],
-                        data_saida=(l[2].isoformat()
-                                    if hasattr(l[2], "isoformat")
-                                    else str(l[2] or "")),
-                        destino=l[3] or "",
-                        retirada=l[4] or "",
-                        produto_id=l[5],
-                        codigo=l[6] or "",
-                        descricao=l[7] or "",
-                        quantidade=float(l[8] or 0),
-                        custo=float(l[9] or 0),
-                    ))
+                # detalhe: saída a saída (pulado no modo somente resumo)
+                if not somente_resumo:
+                    if produto_id:
+                        cur.execute(
+                            """
+                            SELECT m.saida_id, s.sequencia, s.data_saida,
+                                   s.destino, s.retirada,
+                                   m.produto_id, p.codigo, p.descricao,
+                                   m.quantidade, m.custo
+                              FROM itens_saida_mao_obra m
+                              JOIN saidas s ON s.id = m.saida_id
+                              LEFT JOIN produtos p ON p.id = m.produto_id
+                             WHERE s.data_saida BETWEEN %s AND %s
+                               AND m.produto_id = %s
+                             ORDER BY s.sequencia, m.id
+                            """,
+                            (data_inicial, data_final, produto_id),
+                        )
+                    else:
+                        cur.execute(
+                            """
+                            SELECT m.saida_id, s.sequencia, s.data_saida,
+                                   s.destino, s.retirada,
+                                   m.produto_id, p.codigo, p.descricao,
+                                   m.quantidade, m.custo
+                              FROM itens_saida_mao_obra m
+                              JOIN saidas s ON s.id = m.saida_id
+                              LEFT JOIN produtos p ON p.id = m.produto_id
+                             WHERE s.data_saida BETWEEN %s AND %s
+                             ORDER BY s.sequencia, m.id
+                            """,
+                            (data_inicial, data_final),
+                        )
+                    for l in cur.fetchall():
+                        relatorio.linhas.append(LinhaMaoObraSaida(
+                            saida_id=l[0],
+                            sequencia=l[1],
+                            data_saida=(l[2].isoformat()
+                                        if hasattr(l[2], "isoformat")
+                                        else str(l[2] or "")),
+                            destino=l[3] or "",
+                            retirada=l[4] or "",
+                            produto_id=l[5],
+                            codigo=l[6] or "",
+                            descricao=l[7] or "",
+                            quantidade=float(l[8] or 0),
+                            custo=float(l[9] or 0),
+                        ))
 
                 # resumo agregado por mão de obra
                 if produto_id:
@@ -126,4 +131,8 @@ class RelatorioMaoObraRepository:
                         quantidade=quantidade,
                         custo=custo,
                     ))
+        logger.info("Relatório de mão de obra gerado: %s linhas, "
+                    "%s no resumo (somente resumo=%s)",
+                    len(relatorio.linhas), len(relatorio.resumo),
+                    somente_resumo)
         return relatorio

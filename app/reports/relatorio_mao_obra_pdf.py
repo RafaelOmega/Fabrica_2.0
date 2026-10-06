@@ -236,15 +236,16 @@ def gerar_pdf_mao_obra(relatorio, caminho: str, periodo: str = "") -> str:
     ])
 
     story: list = []
-    if not relatorio.linhas:
+    if not relatorio.tem_dados:
         story.append(Paragraph("Nenhuma mão de obra no período.",
                                _ESTILO_CELULA))
 
-    # detalhe saída a saída (cada saída vai inteira para a próxima página
-    # se não couber na atual)
-    for saida in _agrupar_por_saida(relatorio.linhas):
-        story.append(KeepTogether(_secao_saida(saida)))
-        story.append(Spacer(1, 0.5 * cm))
+    # detalhe saída a saída (pulado no modo somente resumo; cada saída
+    # vai inteira para a próxima página se não couber na atual)
+    if not relatorio.somente_resumo:
+        for saida in _agrupar_por_saida(relatorio.linhas):
+            story.append(KeepTogether(_secao_saida(saida)))
+            story.append(Spacer(1, 0.5 * cm))
 
     # resumo por mão de obra
     if relatorio.resumo:

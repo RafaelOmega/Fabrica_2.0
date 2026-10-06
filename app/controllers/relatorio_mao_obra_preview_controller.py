@@ -77,12 +77,13 @@ class RelMaoObraPreviewController(QDialog):
         ]
         if self._periodo:
             partes.append(f"<p style='color:{CINZA};'>{self._periodo}</p>")
-        if not self._relatorio.linhas:
+        if not self._relatorio.tem_dados:
             partes.append("<p>Nenhuma mão de obra no período.</p>")
 
-        # detalhe saída a saída
-        for saida in self._saidas_agrupadas():
-            partes.append(self._html_saida(saida))
+        # detalhe saída a saída (pulado no modo somente resumo)
+        if not self._relatorio.somente_resumo:
+            for saida in self._saidas_agrupadas():
+                partes.append(self._html_saida(saida))
 
         # resumo por mão de obra
         partes.append(self._html_resumo())

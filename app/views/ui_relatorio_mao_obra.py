@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'relatorio_mao_obrahSrWin.ui'
+## Form generated from reading UI file 'relatorio_mao_obraWPvkcm.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.11.2
 ##
@@ -15,17 +15,15 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QDateEdit, QFrame, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QSizePolicy,
-    QSpacerItem, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QDateEdit, QFrame,
+    QHBoxLayout, QLabel, QLineEdit, QPushButton,
+    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
 
 class Ui_Rel_Mao_Obra(object):
     def setupUi(self, Rel_Mao_Obra):
         if not Rel_Mao_Obra.objectName():
             Rel_Mao_Obra.setObjectName(u"Rel_Mao_Obra")
-        Rel_Mao_Obra.resize(460, 136)
-        Rel_Mao_Obra.setMinimumSize(QSize(460, 136))
-        Rel_Mao_Obra.setMaximumSize(QSize(460, 136))
+        Rel_Mao_Obra.resize(560, 136)
         font = QFont()
         font.setFamilies([u"Segoe UI Semibold"])
         font.setPointSize(10)
@@ -117,6 +115,11 @@ class Ui_Rel_Mao_Obra(object):
 
         self.horizontalLayout_2.addWidget(self.bt_Pesquisar_Mao_Obra)
 
+        self.chk_Resumo = QCheckBox(self.frm_Codigo)
+        self.chk_Resumo.setObjectName(u"chk_Resumo")
+
+        self.horizontalLayout_2.addWidget(self.chk_Resumo)
+
 
         self.verticalLayout.addWidget(self.frm_Codigo)
 
@@ -153,6 +156,7 @@ class Ui_Rel_Mao_Obra(object):
         self.lb_Data_Final.setText(QCoreApplication.translate("Rel_Mao_Obra", u"Data Final:", None))
         self.lb_Mao_Obra.setText(QCoreApplication.translate("Rel_Mao_Obra", u"M\u00e3o de Obra:", None))
         self.bt_Pesquisar_Mao_Obra.setText(QCoreApplication.translate("Rel_Mao_Obra", u"...", None))
+        self.chk_Resumo.setText(QCoreApplication.translate("Rel_Mao_Obra", u"Imprimir somente Resumo", None))
         self.bt_Filtrar.setText(QCoreApplication.translate("Rel_Mao_Obra", u"Filtrar", None))
     # retranslateUi
 

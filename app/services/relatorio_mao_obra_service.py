@@ -14,5 +14,7 @@ class RelatorioMaoObraService:
         self._repo = RelatorioMaoObraRepository()
 
     def relatorio(self, data_inicial: date, data_final: date,
-                  produto_id: int | None = None) -> RelatorioMaoObra:
-        return self._repo.relatorio(data_inicial, data_final, produto_id)
+                  produto_id: int | None = None,
+                  somente_resumo: bool = False) -> RelatorioMaoObra:
+        return self._repo.relatorio(
+            data_inicial, data_final, produto_id, somente_resumo)

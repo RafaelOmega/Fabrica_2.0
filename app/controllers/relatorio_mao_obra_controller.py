@@ -4,6 +4,8 @@
 Responsabilidade: APENAS controle de tela (filtros, botões).
 Ao filtrar, abre a pré-visualização (mesmo layout do PDF), de onde
 o usuário gera PDF, XLSX ou CSV. Dados via RelatorioMaoObraService.
+
+Com chk_Resumo marcado, gera somente o resumo agregado.
 """
 from datetime import date
 
@@ -70,11 +72,14 @@ class RelMaoObraController(QWidget):
                 "A data final deve ser maior ou igual à data inicial.")
             self.ui.dt_Data_Final.setFocus()
             return
+
+        so_resumo = self.ui.chk_Resumo.isChecked()
         try:
             relatorio = self._service.relatorio(
                 date.fromisoformat(data_inicial),
                 date.fromisoformat(data_final),
                 self._produto_id,
+                so_resumo,
             )
         except Exception as exc:
             logger.exception("Falha ao gerar o relatório de mão de obra")
@@ -83,7 +88,7 @@ class RelMaoObraController(QWidget):
                 f"Não foi possível gerar o relatório:\n{exc}")
             return
 
-        if not relatorio.linhas:
+        if not relatorio.tem_dados:
             QMessageBox.information(
                 self, "Relatório",
                 "Nenhuma mão de obra no período.")
@@ -93,6 +98,8 @@ class RelMaoObraController(QWidget):
             f"Período: {self.ui.dt_Data_Inicial.date().toString('dd/MM/yyyy')}"
             f" a {self.ui.dt_Data_Final.date().toString('dd/MM/yyyy')}"
         )
+        if so_resumo:
+            periodo += " · Resumo"
 
         from app.controllers.relatorio_mao_obra_preview_controller import (
             RelMaoObraPreviewController,
